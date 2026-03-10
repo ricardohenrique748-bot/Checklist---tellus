@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Truck, Calendar, Clock, User, CheckCircle, XCircle, MinusCircle, ChevronUp, ChevronDown, ListChecks, Database, Menu, X, Camera, ImagePlus, Trash2, Users, Key, Save, Droplet, Gauge, ClipboardCheck, BarChart3, Lock, Wrench } from 'lucide-react';
+import { Truck, Calendar, Clock, User, CheckCircle, XCircle, MinusCircle, ChevronUp, ChevronDown, ListChecks, Database, Menu, X, Camera, ImagePlus, Trash2, Users, Key, Save, Droplet, Gauge, ClipboardCheck, BarChart3, Lock, Wrench, Pencil } from 'lucide-react';
 import { supabase } from './lib/supabase';
 
 const mechanicallyItems = [
@@ -814,31 +814,87 @@ function DatabaseView() {
   const [acessoSenha, setAcessoSenha] = useState('');
   const [acessoNivel, setAcessoNivel] = useState('');
 
+  const [editingId, setEditingId] = useState<number | null>(null);
+
+  const clearForm = () => {
+    setFrotaPlaca(''); setFrotaModelo(''); setFrotaTipo('');
+    setFuncNome(''); setFuncCargo('');
+    setAcessoEmail(''); setAcessoSenha(''); setAcessoNivel('');
+    setEditingId(null);
+  };
+
   const handleSaveFrota = (e: React.FormEvent) => {
     e.preventDefault();
     if (!frotaPlaca || !frotaModelo || !frotaTipo) return alert('Preencha todos os campos!');
-    const newData = [...frotas, { id: Date.now(), placa: frotaPlaca, modelo: frotaModelo, tipo: frotaTipo }];
+
+    let newData;
+    if (editingId) {
+      newData = frotas.map(f => f.id === editingId ? { ...f, placa: frotaPlaca, modelo: frotaModelo, tipo: frotaTipo } : f);
+      alert('Veículo atualizado com sucesso!');
+    } else {
+      newData = [...frotas, { id: Date.now(), placa: frotaPlaca, modelo: frotaModelo, tipo: frotaTipo }];
+      alert('Veículo cadastrado com sucesso!');
+    }
+
     setFrotas(newData); saveToStorage('frotas', newData);
-    setFrotaPlaca(''); setFrotaModelo(''); setFrotaTipo('');
-    alert('Veículo cadastrado com sucesso!');
+    clearForm();
   };
 
   const handleSaveFuncionario = (e: React.FormEvent) => {
     e.preventDefault();
     if (!funcNome || !funcCargo) return alert('Preencha todos os campos!');
-    const newData = [...funcionarios, { id: Date.now(), nome: funcNome, cargo: funcCargo }];
+
+    let newData;
+    if (editingId) {
+      newData = funcionarios.map(f => f.id === editingId ? { ...f, nome: funcNome, cargo: funcCargo } : f);
+      alert('Funcionário atualizado com sucesso!');
+    } else {
+      newData = [...funcionarios, { id: Date.now(), nome: funcNome, cargo: funcCargo }];
+      alert('Funcionário cadastrado com sucesso!');
+    }
+
     setFuncionarios(newData); saveToStorage('funcionarios', newData);
-    setFuncNome(''); setFuncCargo('');
-    alert('Funcionário cadastrado com sucesso!');
+    clearForm();
   };
 
   const handleSaveAcesso = (e: React.FormEvent) => {
     e.preventDefault();
     if (!acessoEmail || !acessoSenha || !acessoNivel) return alert('Preencha todos os campos!');
-    const newData = [...acessos, { id: Date.now(), email: acessoEmail, senha: acessoSenha, nivel: acessoNivel }];
+
+    let newData;
+    if (editingId) {
+      newData = acessos.map(f => f.id === editingId ? { ...f, email: acessoEmail, senha: acessoSenha, nivel: acessoNivel } : f);
+      alert('Acesso atualizado com sucesso!');
+    } else {
+      newData = [...acessos, { id: Date.now(), email: acessoEmail, senha: acessoSenha, nivel: acessoNivel }];
+      alert('Acesso cadastrado com sucesso!');
+    }
+
     setAcessos(newData); saveToStorage('acessos', newData);
-    setAcessoEmail(''); setAcessoSenha(''); setAcessoNivel('');
-    alert('Acesso cadastrado com sucesso!');
+    clearForm();
+  };
+
+  const startEditFrota = (f: any) => {
+    setEditingId(f.id);
+    setFrotaPlaca(f.placa);
+    setFrotaModelo(f.modelo);
+    setFrotaTipo(f.tipo);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const startEditFuncionario = (f: any) => {
+    setEditingId(f.id);
+    setFuncNome(f.nome);
+    setFuncCargo(f.cargo);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const startEditAcesso = (f: any) => {
+    setEditingId(f.id);
+    setAcessoEmail(f.email);
+    setAcessoSenha(f.senha);
+    setAcessoNivel(f.nivel);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const deleteItem = (type: 'frotas' | 'funcionarios' | 'acessos', id: number) => {
@@ -853,6 +909,7 @@ function DatabaseView() {
       const filtered = acessos.filter(f => f.id !== id);
       setAcessos(filtered); saveToStorage('acessos', filtered);
     }
+    if (editingId === id) setEditingId(null);
   };
 
   return (
@@ -865,7 +922,7 @@ function DatabaseView() {
       {/* Tabs para os formulários */}
       <div className="flex flex-wrap gap-2 mb-8 bg-white p-2 rounded-2xl shadow-sm border border-slate-200">
         <button
-          onClick={() => setActiveForm('frotas')}
+          onClick={() => { setActiveForm('frotas'); clearForm(); }}
           className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all ${activeForm === 'frotas'
             ? 'bg-blue-600 text-white shadow-md'
             : 'text-slate-500 hover:bg-slate-50'
@@ -875,7 +932,7 @@ function DatabaseView() {
           Frotas
         </button>
         <button
-          onClick={() => setActiveForm('funcionarios')}
+          onClick={() => { setActiveForm('funcionarios'); clearForm(); }}
           className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all ${activeForm === 'funcionarios'
             ? 'bg-blue-600 text-white shadow-md'
             : 'text-slate-500 hover:bg-slate-50'
@@ -885,7 +942,7 @@ function DatabaseView() {
           Funcionários
         </button>
         <button
-          onClick={() => setActiveForm('logins')}
+          onClick={() => { setActiveForm('logins'); clearForm(); }}
           className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all ${activeForm === 'logins'
             ? 'bg-blue-600 text-white shadow-md'
             : 'text-slate-500 hover:bg-slate-50'
@@ -906,7 +963,9 @@ function DatabaseView() {
               <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
                 <Truck className="w-5 h-5 text-blue-600" />
               </div>
-              <h2 className="text-lg font-extrabold text-slate-800 tracking-wide uppercase">Cadastro de Veículo / Equipamento</h2>
+              <h2 className="text-lg font-extrabold text-slate-800 tracking-wide uppercase">
+                {editingId ? 'Editar Veículo / Equipamento' : 'Cadastro de Veículo / Equipamento'}
+              </h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-7">
@@ -954,13 +1013,22 @@ function DatabaseView() {
               </div>
             </div>
 
-            <div className="pt-6 flex justify-end">
+            <div className="pt-6 flex justify-end gap-3">
+              {editingId && (
+                <button
+                  type="button"
+                  onClick={clearForm}
+                  className="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-6 py-3.5 rounded-xl transition-all text-[14px] uppercase tracking-wide"
+                >
+                  Cancelar
+                </button>
+              )}
               <button
                 type="submit"
                 className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold px-6 py-3.5 rounded-xl shadow-md active:scale-[0.98] transition-all text-[14px] uppercase tracking-wide w-full sm:w-auto"
               >
                 <Save className="w-[18px] h-[18px]" />
-                Salvar Veículo
+                {editingId ? 'Salvar Alterações' : 'Salvar Veículo'}
               </button>
             </div>
           </form>
@@ -973,7 +1041,9 @@ function DatabaseView() {
               <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center">
                 <Users className="w-5 h-5 text-green-600" />
               </div>
-              <h2 className="text-lg font-extrabold text-slate-800 tracking-wide uppercase">Cadastro de Funcionário</h2>
+              <h2 className="text-lg font-extrabold text-slate-800 tracking-wide uppercase">
+                {editingId ? 'Editar Funcionário' : 'Cadastro de Funcionário'}
+              </h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-7">
@@ -1012,13 +1082,22 @@ function DatabaseView() {
               </div>
             </div>
 
-            <div className="pt-6 flex justify-end">
+            <div className="pt-6 flex justify-end gap-3">
+              {editingId && (
+                <button
+                  type="button"
+                  onClick={clearForm}
+                  className="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-6 py-3.5 rounded-xl transition-all text-[14px] uppercase tracking-wide"
+                >
+                  Cancelar
+                </button>
+              )}
               <button
                 type="submit"
                 className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-extrabold px-6 py-3.5 rounded-xl shadow-md active:scale-[0.98] transition-all text-[14px] uppercase tracking-wide w-full sm:w-auto"
               >
                 <Save className="w-[18px] h-[18px]" />
-                Salvar Funcionário
+                {editingId ? 'Salvar Alterações' : 'Salvar Funcionário'}
               </button>
             </div>
           </form>
@@ -1031,7 +1110,9 @@ function DatabaseView() {
               <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center">
                 <Key className="w-5 h-5 text-purple-600" />
               </div>
-              <h2 className="text-lg font-extrabold text-slate-800 tracking-wide uppercase">Cadastro de Acesso</h2>
+              <h2 className="text-lg font-extrabold text-slate-800 tracking-wide uppercase">
+                {editingId ? 'Editar Acesso' : 'Cadastro de Acesso'}
+              </h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-7">
@@ -1075,13 +1156,22 @@ function DatabaseView() {
               </div>
             </div>
 
-            <div className="pt-6 flex justify-end">
+            <div className="pt-6 flex justify-end gap-3">
+              {editingId && (
+                <button
+                  type="button"
+                  onClick={clearForm}
+                  className="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-6 py-3.5 rounded-xl transition-all text-[14px] uppercase tracking-wide"
+                >
+                  Cancelar
+                </button>
+              )}
               <button
                 type="submit"
                 className="flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-extrabold px-6 py-3.5 rounded-xl shadow-md active:scale-[0.98] transition-all text-[14px] uppercase tracking-wide w-full sm:w-auto"
               >
                 <Save className="w-[18px] h-[18px]" />
-                Salvar Acesso
+                {editingId ? 'Salvar Alterações' : 'Salvar Acesso'}
               </button>
             </div>
           </form>
@@ -1103,9 +1193,14 @@ function DatabaseView() {
                   <div className="font-bold text-slate-800">{f.placa} <span className="text-slate-400 font-medium">({f.modelo})</span></div>
                   <div className="text-xs font-bold text-blue-500 uppercase mt-1">{f.tipo}</div>
                 </div>
-                <button onClick={() => deleteItem('frotas', f.id)} className="text-slate-400 hover:text-red-500 p-2 transition-colors">
-                  <Trash2 className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => startEditFrota(f)} className="text-slate-300 hover:text-blue-500 p-2 transition-colors">
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => deleteItem('frotas', f.id)} className="text-slate-300 hover:text-red-500 p-2 transition-colors">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -1120,9 +1215,14 @@ function DatabaseView() {
                   <div className="font-bold text-slate-800">{f.nome}</div>
                   <div className="text-xs font-bold text-green-500 uppercase mt-1">{f.cargo}</div>
                 </div>
-                <button onClick={() => deleteItem('funcionarios', f.id)} className="text-slate-400 hover:text-red-500 p-2 transition-colors">
-                  <Trash2 className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => startEditFuncionario(f)} className="text-slate-300 hover:text-blue-500 p-2 transition-colors">
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => deleteItem('funcionarios', f.id)} className="text-slate-300 hover:text-red-500 p-2 transition-colors">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -1137,9 +1237,14 @@ function DatabaseView() {
                   <div className="font-bold text-slate-800">{f.email}</div>
                   <div className="text-xs font-bold text-purple-500 uppercase mt-1">{f.nivel}</div>
                 </div>
-                <button onClick={() => deleteItem('acessos', f.id)} className="text-slate-400 hover:text-red-500 p-2 transition-colors">
-                  <Trash2 className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => startEditAcesso(f)} className="text-slate-300 hover:text-blue-500 p-2 transition-colors">
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => deleteItem('acessos', f.id)} className="text-slate-300 hover:text-red-500 p-2 transition-colors">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -1685,9 +1790,20 @@ function PreventivaView() {
   const [atual, setAtual] = useState('');
   const [intervalo, setIntervalo] = useState('500');
   const [dataInicio, setDataInicio] = useState(currentDate);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [preventivas, setPreventivas] = useState<any[]>(() => {
     try { return JSON.parse(localStorage.getItem('preventivas') || '[]'); } catch { return []; }
   });
+
+  const clearForm = () => {
+    setVeiculo('');
+    setPlano('');
+    setUltima('');
+    setAtual('');
+    setIntervalo('500');
+    setDataInicio(currentDate);
+    setEditingId(null);
+  };
 
   const handleSavePreventiva = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1696,27 +1812,54 @@ function PreventivaView() {
       return;
     }
 
-    const newPreventiva = {
-      id: Date.now(),
-      veiculo,
-      plano,
-      ultima: ultima || '0',
-      atual,
-      intervalo,
-      data: dataInicio
-    };
-
     try {
       const existing = JSON.parse(localStorage.getItem('preventivas') || '[]');
-      const updated = [...existing, newPreventiva];
+      let updated;
+
+      if (editingId) {
+        // Update mode
+        updated = existing.map((p: any) => p.id === editingId ? {
+          ...p,
+          veiculo,
+          plano,
+          ultima: ultima || '0',
+          atual,
+          intervalo,
+          data: dataInicio
+        } : p);
+        alert('Plano atualizado com sucesso!');
+      } else {
+        // Create mode
+        const newPreventiva = {
+          id: Date.now(),
+          veiculo,
+          plano,
+          ultima: ultima || '0',
+          atual,
+          intervalo,
+          data: dataInicio
+        };
+        updated = [...existing, newPreventiva];
+        alert('Plano de preventiva ativado com sucesso!');
+      }
+
       localStorage.setItem('preventivas', JSON.stringify(updated));
       setPreventivas(updated);
-      alert('Plano de preventiva ativado com sucesso!');
-      // Clear form
-      setVeiculo(''); setPlano(''); setUltima(''); setAtual(''); setIntervalo('500');
+      clearForm();
     } catch (e) {
       alert('Erro ao salvar no banco de dados.');
     }
+  };
+
+  const startEdit = (p: any) => {
+    setEditingId(p.id);
+    setVeiculo(p.veiculo);
+    setPlano(p.plano);
+    setUltima(p.ultima);
+    setAtual(p.atual);
+    setIntervalo(p.intervalo);
+    setDataInicio(p.data || currentDate);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const deletePreventiva = (id: number) => {
@@ -1857,16 +2000,18 @@ function PreventivaView() {
           <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-3 pt-2">
             <button
               type="button"
+              onClick={clearForm}
               className="w-full sm:w-auto px-6 py-3.5 rounded-xl border-2 border-slate-200 text-slate-500 font-bold text-sm uppercase tracking-wide hover:bg-slate-50 hover:text-slate-700 transition-colors"
             >
-              Cancelar
+              {editingId ? 'Cancelar Edição' : 'Limpar'}
             </button>
             <button
               type="submit"
-              className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-green-600 border-2 border-green-600 text-white font-extrabold text-sm uppercase tracking-wide hover:bg-green-700 hover:border-green-700 shadow-md active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+              className={`w-full sm:w-auto px-8 py-3.5 rounded-xl border-2 text-white font-extrabold text-sm uppercase tracking-wide shadow-md active:scale-[0.98] transition-all flex items-center justify-center gap-2 ${editingId ? 'bg-blue-600 border-blue-600 hover:bg-blue-700' : 'bg-green-600 border-green-600 hover:bg-green-700'
+                }`}
             >
               <Save className="w-[18px] h-[18px]" />
-              Ativar Plano
+              {editingId ? 'Atualizar Plano' : 'Ativar Plano'}
             </button>
           </div>
         </div>
@@ -1898,14 +2043,19 @@ function PreventivaView() {
                     <div className="text-[11px] font-bold text-slate-400 uppercase">Intervalo: <span className="text-slate-600">{p.intervalo}h</span></div>
                   </div>
                 </div>
-                <div className="flex items-center gap-6">
-                  <div className={`px-4 py-2 rounded-xl text-center min-w-[100px] ${bgClass}`}>
-                    <div className={`text-base font-black ${colorClass}`}>{restante}h</div>
+                <div className="flex items-center gap-2 sm:gap-4">
+                  <div className={`px-4 py-2 rounded-xl text-center min-w-[80px] sm:min-w-[100px] ${bgClass}`}>
+                    <div className={`text-sm sm:text-base font-black ${colorClass}`}>{restante}h</div>
                     <div className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Restante</div>
                   </div>
-                  <button onClick={() => deletePreventiva(p.id)} className="text-slate-300 hover:text-red-500 p-2 transition-colors">
-                    <Trash2 className="w-5 h-5" />
-                  </button>
+                  <div className="flex items-center">
+                    <button onClick={() => startEdit(p)} className="text-slate-300 hover:text-blue-500 p-2 transition-colors">
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => deletePreventiva(p.id)} className="text-slate-300 hover:text-red-500 p-2 transition-colors">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             );
