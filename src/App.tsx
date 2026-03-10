@@ -1345,36 +1345,40 @@ function DatabaseView() {
                     <ChevronDown className="w-4 h-4" />
                   </div>
                 </div>
-                <div className="col-span-1 md:col-span-1">
-                  <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
-                    Empresa <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <select value={frotaEmpresa} onChange={e => setFrotaEmpresa(e.target.value)} className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium appearance-none hover:border-slate-300 transition-colors shadow-sm">
-                      <option value="">Selecione a empresa...</option>
-                      {empresas.map(emp => (
-                        <option key={emp.id} value={emp.nome}>{emp.nome}</option>
-                      ))}
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
-                      <ChevronDown className="w-4 h-4" />
-                    </div>
-                  </div>
-                </div>
-                <div className="col-span-1 md:col-span-2">
-                  <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
-                    KM Atual
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      value={frotaKM} onChange={e => setFrotaKM(e.target.value)}
-                      placeholder="Ex: 150000"
-                      className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium placeholder:text-slate-400 hover:border-slate-300 transition-colors shadow-sm"
-                    />
+              </div>
+
+              <div className="col-span-1 md:col-span-1">
+                <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                  Empresa <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <select value={frotaEmpresa} onChange={e => setFrotaEmpresa(e.target.value)} className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium appearance-none hover:border-slate-300 transition-colors shadow-sm">
+                    <option value="">Selecione a empresa...</option>
+                    {empresas.map(emp => (
+                      <option key={emp.id} value={emp.nome}>{emp.nome}</option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                    <ChevronDown className="w-4 h-4" />
                   </div>
                 </div>
               </div>
+
+              <div className="col-span-1 md:col-span-2">
+                <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                  KM Atual
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={frotaKM} onChange={e => setFrotaKM(e.target.value)}
+                    placeholder="Ex: 150000"
+                    className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium placeholder:text-slate-400 hover:border-slate-300 transition-colors shadow-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
 
               <div className="pt-6 flex justify-end gap-3">
                 {editingId && (
@@ -1639,7 +1643,7 @@ function DatabaseView() {
       </div >
 
       {/* Listagem de Cadastrados */}
-      < div className="bg-white rounded-2xl shadow-[0_2px_12px_rgb(0,0,0,0.03)] border border-slate-200 overflow-hidden" >
+      <div className="bg-white rounded-2xl shadow-[0_2px_12px_rgb(0,0,0,0.03)] border border-slate-200 overflow-hidden">
         <div className="p-6 border-b border-slate-200 bg-slate-50/50">
           <h2 className="text-lg font-extrabold text-slate-800 tracking-wide uppercase">Cadastros Realizados</h2>
         </div>
@@ -1744,9 +1748,8 @@ function DatabaseView() {
             </div>
           )
         }
-      </div >
-
-    </div >
+      </div>
+    </div>
   );
 }
 
