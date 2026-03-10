@@ -464,7 +464,7 @@ function ChecklistView() {
       return [];
     }
   });
-  const [selectedInspection, setSelectedInspection] = useState<any>(null);
+  const [, setSelectedInspection] = useState<any>(null);
 
   const [inspectionTab, setInspectionTab] = useState<'checklist' | 'lubrificacao' | 'calibragem'>('checklist');
 
