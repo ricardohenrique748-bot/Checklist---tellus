@@ -1463,18 +1463,12 @@ function DashboardView() {
 
             {/* Y Axis Lines & Labels */}
             <div className="absolute left-0 top-0 bottom-24 w-full pointer-events-none flex flex-col justify-between text-[10px] font-bold text-slate-400">
-              <div className="flex items-center w-full relative">
-                <span className="w-10 text-right pr-2">100%</span>
-                <div className="flex-1 border-t border-slate-100 border-dashed"></div>
-              </div>
+
               <div className="flex items-center w-full relative">
                 <span className="w-10 text-right pr-2">50%</span>
                 <div className="flex-1 border-t border-slate-100 border-dashed"></div>
               </div>
-              <div className="flex items-center w-full relative z-10">
-                <span className="w-10 text-right pr-2 text-slate-600">0%</span>
-                <div className="flex-1 border-t-2 border-slate-200"></div>
-              </div>
+
             </div>
 
             {/* Bars container Overhaul */}
@@ -1495,7 +1489,7 @@ function DashboardView() {
                         <div key={p.id} className="flex flex-col items-center relative group w-20 h-full shrink-0">
                           {/* Top Area: Stats */}
                           <div className="absolute -top-12 flex flex-col items-center gap-0.5">
-                            <span className="text-[11px] font-black text-slate-700">{percentRemaining}%</span>
+
                             <span className={`text-[10px] font-black px-2 py-0.5 rounded-full text-white bg-slate-900 shadow-sm`}>
                               {restante}h
                             </span>
