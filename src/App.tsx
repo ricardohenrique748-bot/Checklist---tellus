@@ -1813,7 +1813,8 @@ function DashboardView() {
                           <div className="flex gap-2.5 h-full relative" style={{ width: hasImplemento ? '112px' : '50px' }}>
                             {/* BARRA CAMINHÃO */}
                             <div className="flex flex-col items-center w-full h-full relative group/bar">
-                              <div className="absolute -top-12 flex flex-col items-center gap-0.5">
+                              <div className="absolute -top-14 flex flex-col items-center gap-1">
+                                {hasImplemento && <span className="text-[9px] font-black text-slate-400">CAM.</span>}
                                 <span className="text-[12px] font-black px-3 py-1 rounded-full text-white bg-slate-900 shadow-sm z-20">
                                   {restante}h
                                 </span>
@@ -1851,7 +1852,8 @@ function DashboardView() {
                             {/* BARRA IMPLEMENTO (OPCIONAL) */}
                             {hasImplemento && (
                               <div className="flex flex-col items-center w-full h-full relative group/barimp">
-                                <div className="absolute -top-12 flex flex-col items-center gap-0.5">
+                                <div className="absolute -top-14 flex flex-col items-center gap-1">
+                                  <span className="text-[9px] font-black text-slate-400">IMP.</span>
                                   <span className="text-[12px] font-black px-3 py-1 rounded-full text-white bg-slate-700 shadow-sm z-20">
                                     {restanteImp}h
                                   </span>
