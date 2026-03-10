@@ -1036,6 +1036,7 @@ function DatabaseView() {
   const [frotaPlaca, setFrotaPlaca] = useState('');
   const [frotaModelo, setFrotaModelo] = useState('');
   const [frotaTipo, setFrotaTipo] = useState('');
+  const [frotaEmpresa, setFrotaEmpresa] = useState('');
 
   const [funcNome, setFuncNome] = useState('');
   const [funcEmail, setFuncEmail] = useState('');
@@ -1049,7 +1050,7 @@ function DatabaseView() {
   const [editingId, setEditingId] = useState<number | null>(null);
 
   const clearForm = () => {
-    setFrotaPlaca(''); setFrotaModelo(''); setFrotaTipo('');
+    setFrotaPlaca(''); setFrotaModelo(''); setFrotaTipo(''); setFrotaEmpresa('');
     setFuncNome(''); setFuncEmail(''); setFuncCargo('');
     setAcessoNome(''); setAcessoEmail(''); setAcessoSenha(''); setAcessoNivel('');
     setEditingId(null);
@@ -1057,16 +1058,16 @@ function DatabaseView() {
 
   const handleSaveFrota = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!frotaPlaca || !frotaModelo || !frotaTipo) return alert('Preencha todos os campos!');
+    if (!frotaPlaca || !frotaModelo || !frotaTipo || !frotaEmpresa) return alert('Preencha todos os campos!');
 
     try {
       if (editingId) {
-        const { data, error } = await supabase.from('frotas').update({ placa: frotaPlaca, modelo: frotaModelo, tipo: frotaTipo }).eq('id', editingId).select();
+        const { data, error } = await supabase.from('frotas').update({ placa: frotaPlaca, modelo: frotaModelo, tipo: frotaTipo, empresa: frotaEmpresa }).eq('id', editingId).select();
         if (error) throw error;
         setFrotas(frotas.map(f => f.id === editingId ? data[0] : f));
         alert('Veículo atualizado com sucesso!');
       } else {
-        const { data, error } = await supabase.from('frotas').insert([{ placa: frotaPlaca, modelo: frotaModelo, tipo: frotaTipo }]).select();
+        const { data, error } = await supabase.from('frotas').insert([{ placa: frotaPlaca, modelo: frotaModelo, tipo: frotaTipo, empresa: frotaEmpresa }]).select();
         if (error) throw error;
         if (data) setFrotas([data[0], ...frotas]);
         alert('Veículo cadastrado com sucesso!');
@@ -1127,6 +1128,7 @@ function DatabaseView() {
     setFrotaPlaca(f.placa);
     setFrotaModelo(f.modelo);
     setFrotaTipo(f.tipo);
+    setFrotaEmpresa(f.empresa || '');
     window.scrollTo({ top: 0, behavior: 'auto' });
     window.scrollTo(0, 0);
   };
@@ -1256,7 +1258,7 @@ function DatabaseView() {
                   className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium placeholder:text-slate-400 hover:border-slate-300 transition-colors shadow-sm"
                 />
               </div>
-              <div className="col-span-1 md:col-span-2">
+              <div className="col-span-1 md:col-span-1">
                 <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
                   Tipo de Equipamento <span className="text-red-500">*</span>
                 </label>
@@ -1272,6 +1274,22 @@ function DatabaseView() {
                     <option value="carro_leve">Veículo Leve / Passeio</option>
                     <option value="patu">PATU / Triturador</option>
                     <option value="gerador">Gerador</option>
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                    <ChevronDown className="w-4 h-4" />
+                  </div>
+                </div>
+              </div>
+              <div className="col-span-1 md:col-span-1">
+                <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                  Empresa <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <select value={frotaEmpresa} onChange={e => setFrotaEmpresa(e.target.value)} className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium appearance-none hover:border-slate-300 transition-colors shadow-sm">
+                    <option value="">Selecione a empresa...</option>
+                    <option value="Empresa 1">Empresa 1</option>
+                    <option value="Empresa 2">Empresa 2</option>
+                    <option value="Empresa 3">Empresa 3</option>
                   </select>
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
                     <ChevronDown className="w-4 h-4" />
@@ -1494,7 +1512,10 @@ function DatabaseView() {
               <div key={f.id} className="p-4 sm:px-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
                 <div>
                   <div className="font-bold text-slate-800">{f.placa} <span className="text-slate-400 font-medium">({f.modelo})</span></div>
-                  <div className="text-xs font-bold text-blue-500 uppercase mt-1">{f.tipo}</div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-[10px] font-bold px-2 py-0.5 bg-blue-50 text-blue-600 rounded uppercase">{f.tipo}</span>
+                    {f.empresa && <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-100 text-slate-600 rounded uppercase">{f.empresa}</span>}
+                  </div>
                 </div>
                 <div className="flex items-center gap-1">
                   <button onClick={() => startEditFrota(f)} className="text-slate-400 hover:text-blue-500 p-2 transition-colors">
@@ -1564,15 +1585,59 @@ function DashboardView() {
   const [preventivaStats, setPreventivaStats] = useState({ onTime: 0, attention: 0, critical: 0 });
   const [preventivasData, setPreventivasData] = useState<any[]>([]);
 
+  const [filterStartDate, setFilterStartDate] = useState('');
+  const [filterEndDate, setFilterEndDate] = useState('');
+  const [filterPlaca, setFilterPlaca] = useState('');
+  const [filterEmpresa, setFilterEmpresa] = useState('');
+
+  const [frotasList, setFrotasList] = useState<any[]>([]);
+  const [empresasList, setEmpresasList] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    async function loadOptions() {
+      const { data: frotas } = await supabase.from('frotas').select('placa, empresa');
+      if (frotas) {
+        setFrotasList(frotas);
+        const empresasUnicas = Array.from(new Set(frotas.map((f: any) => f.empresa).filter(Boolean))) as string[];
+        setEmpresasList(empresasUnicas);
+      }
+    }
+    loadOptions();
+  }, []);
+
   useEffect(() => {
     async function fetchData() {
+      setLoading(true);
       // Frotas
-      const { data: frotasData } = await supabase.from('frotas').select('id');
+      let frotasQuery = supabase.from('frotas').select('*');
+      if (filterPlaca) frotasQuery = frotasQuery.eq('placa', filterPlaca);
+      if (filterEmpresa) frotasQuery = frotasQuery.eq('empresa', filterEmpresa);
+
+      const { data: frotasData } = await frotasQuery;
       const activeFrotas = frotasData?.length || 0;
 
-      // Inspeções (Métricas simplificadas pegando a última inspeção ou o total)
-      // Para as não conformidades vamos pegar os últimos itens
-      const { data: inspData } = await supabase.from('inspecoes').select('*').order('created_at', { ascending: false }).limit(10);
+      // Inspeções (Métricas considerando filtros e toda a base retornada)
+      let inspQuery = supabase.from('inspecoes').select('*').order('created_at', { ascending: false });
+      if (filterPlaca) inspQuery = inspQuery.eq('placa', filterPlaca);
+      if (filterStartDate) inspQuery = inspQuery.gte('data', filterStartDate);
+      if (filterEndDate) inspQuery = inspQuery.lte('data', filterEndDate);
+
+      if (!filterPlaca && filterEmpresa && frotasData) {
+        const placasDaEmpresa = frotasData.map((f: any) => f.placa);
+        if (placasDaEmpresa.length > 0) {
+          inspQuery = inspQuery.in('placa', placasDaEmpresa);
+        } else {
+          inspQuery = inspQuery.in('placa', ['NENHUMA_PLACA_VALIDA']);
+        }
+      }
+
+      // Limit to 10 if no filter is applied just to behave similarly to before, otherwise fetch all
+      if (!filterPlaca && !filterEmpresa && !filterStartDate && !filterEndDate) {
+        inspQuery = inspQuery.limit(10);
+      }
+
+      const { data: inspData } = await inspQuery;
       let inspectionsCount = inspData?.length || 0;
       let ncCount = 0;
 
@@ -1589,7 +1654,21 @@ function DashboardView() {
       setStats({ inspections: inspectionsCount, nonConformities: ncCount, activeFrotas });
 
       // Preventivas
-      const { data: prevData } = await supabase.from('preventivas').select('*');
+      let prevQuery = supabase.from('preventivas').select('*');
+      if (filterPlaca) prevQuery = prevQuery.eq('veiculo', filterPlaca);
+      if (filterStartDate) prevQuery = prevQuery.gte('data', filterStartDate);
+      if (filterEndDate) prevQuery = prevQuery.lte('data', filterEndDate);
+
+      if (!filterPlaca && filterEmpresa && frotasData) {
+        const placasDaEmpresa = frotasData.map((f: any) => f.placa);
+        if (placasDaEmpresa.length > 0) {
+          prevQuery = prevQuery.in('veiculo', placasDaEmpresa);
+        } else {
+          prevQuery = prevQuery.in('veiculo', ['NENHUMA_PLACA_VALIDA']);
+        }
+      }
+
+      const { data: prevData } = await prevQuery;
       let onTime = 0, attention = 0, critical = 0;
 
       if (prevData) {
@@ -1614,17 +1693,89 @@ function DashboardView() {
       }
 
       setPreventivaStats({ onTime, attention, critical });
+      setLoading(false);
     }
 
     fetchData();
-  }, []);
+  }, [filterStartDate, filterEndDate, filterPlaca, filterEmpresa]);
 
   return (
     <div className="max-w-[1000px] mx-auto pb-24">
       <header className="mb-6 pt-2">
-        <h1 className="text-[28px] font-extrabold tracking-tight text-slate-800">Dashboard</h1>
-        <p className="text-slate-500 mt-2 font-medium">Visão geral do desempenho e status das frotas.</p>
+        <div className="flex justify-between items-end">
+          <div>
+            <h1 className="text-[28px] font-extrabold tracking-tight text-slate-800">Dashboard</h1>
+            <p className="text-slate-500 mt-2 font-medium">Visão geral do desempenho e status das frotas.</p>
+          </div>
+          {loading && (
+            <div className="text-blue-500 flex items-center gap-2 mb-2 text-sm font-bold">
+              <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Atualizando...
+            </div>
+          )}
+        </div>
       </header>
+
+      {/* Filtros */}
+      <div className="bg-white rounded-xl shadow-[0_2px_12px_rgb(0,0,0,0.03)] border border-slate-200 p-6 mb-8 flex flex-col md:flex-row gap-4 items-end">
+        <div className="flex-1 w-full">
+          <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-2">Data Inicial</label>
+          <input
+            type="date"
+            value={filterStartDate}
+            onChange={(e) => setFilterStartDate(e.target.value)}
+            className="w-full h-11 px-3 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm font-medium"
+          />
+        </div>
+        <div className="flex-1 w-full">
+          <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-2">Data Final</label>
+          <input
+            type="date"
+            value={filterEndDate}
+            onChange={(e) => setFilterEndDate(e.target.value)}
+            className="w-full h-11 px-3 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm font-medium"
+          />
+        </div>
+        <div className="flex-1 w-full">
+          <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-2">Empresa</label>
+          <select
+            value={filterEmpresa}
+            onChange={(e) => { setFilterEmpresa(e.target.value); setFilterPlaca(''); }}
+            className="w-full h-11 px-3 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm font-medium"
+          >
+            <option value="">Todas</option>
+            {empresasList.map((emp) => (
+              <option key={emp} value={emp}>{emp}</option>
+            ))}
+          </select>
+        </div>
+        <div className="flex-1 w-full">
+          <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-2">Placa</label>
+          <select
+            value={filterPlaca}
+            onChange={(e) => setFilterPlaca(e.target.value)}
+            className="w-full h-11 px-3 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm font-medium"
+          >
+            <option value="">Todas</option>
+            {frotasList
+              .filter(f => !filterEmpresa || f.empresa === filterEmpresa)
+              .map((f) => (
+                <option key={f.placa} value={f.placa}>{f.placa}</option>
+              ))}
+          </select>
+        </div>
+        <div className="w-full md:w-auto">
+          <button
+            onClick={() => { setFilterStartDate(''); setFilterEndDate(''); setFilterPlaca(''); setFilterEmpresa(''); }}
+            className="h-11 px-6 flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-extrabold uppercase text-xs rounded-xl transition-all w-full active:scale-95"
+          >
+            Limpar
+          </button>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white rounded-xl shadow-[0_2px_12px_rgb(0,0,0,0.03)] border border-slate-200 p-6 flex flex-col justify-center">
