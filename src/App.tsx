@@ -1592,10 +1592,21 @@ function DashboardView() {
 
       if (prevData) {
         prevData.forEach((p: any) => {
-          const diff = parseInt(p.intervalo) - (parseInt(p.atual) - parseInt(p.ultima || '0'));
+          // Status Caminhão
+          const acumulado = (parseInt(p.atual) || 0) - (parseInt(p.ultima) || 0);
+          const diff = (parseInt(p.intervalo) || 500) - acumulado;
           if (diff < 20) critical++;
           else if (diff <= 60) attention++;
           else onTime++;
+
+          // Status Implemento
+          if (p.intervalo_implemento && parseInt(p.intervalo_implemento) > 0) {
+            const acumuladoImp = (parseInt(p.atual_implemento) || 0) - (parseInt(p.ultima_implemento) || 0);
+            const diffImp = (parseInt(p.intervalo_implemento) || 500) - acumuladoImp;
+            if (diffImp < 20) critical++;
+            else if (diffImp <= 60) attention++;
+            else onTime++;
+          }
         });
         setPreventivasData(prevData);
       }
@@ -1695,7 +1706,22 @@ function DashboardView() {
             <h3 className="text-xs font-bold text-slate-500 mb-4 uppercase tracking-wider">Atenção Necessária</h3>
             <div className="space-y-3">
               {(() => {
-                const needed = preventivasData.filter((p: any) => (parseInt(p.intervalo) - (parseInt(p.atual) - parseInt(p.ultima))) <= 60);
+                const needed: any[] = [];
+                preventivasData.forEach((p: any) => {
+                  const acumulado = (parseInt(p.atual) || 0) - (parseInt(p.ultima) || 0);
+                  const restante = (parseInt(p.intervalo) || 500) - acumulado;
+                  if (restante <= 60) {
+                    needed.push({ ...p, restante, tipoLabel: 'CAMINHÃO' });
+                  }
+
+                  if (p.intervalo_implemento && parseInt(p.intervalo_implemento) > 0) {
+                    const acumuladoImp = (parseInt(p.atual_implemento) || 0) - (parseInt(p.ultima_implemento) || 0);
+                    const restanteImp = (parseInt(p.intervalo_implemento) || 500) - acumuladoImp;
+                    if (restanteImp <= 60) {
+                      needed.push({ ...p, restante: restanteImp, tipoLabel: 'IMPLEMENTO' });
+                    }
+                  }
+                });
 
                 if (needed.length === 0) {
                   return (
@@ -1707,20 +1733,21 @@ function DashboardView() {
                   );
                 }
 
-                return needed.map((p: any) => {
-                  const restante = parseInt(p.intervalo) - (parseInt(p.atual) - parseInt(p.ultima));
-                  const isCritical = restante < 20;
+                return needed.map((item: any, idx: number) => {
+                  const isCritical = item.restante < 20;
                   return (
-                    <div key={p.id} className="flex items-center justify-between p-4 rounded-xl bg-white border border-slate-100 shadow-sm">
+                    <div key={`${item.id}-${idx}`} className="flex items-center justify-between p-4 rounded-xl bg-white border border-slate-100 shadow-sm">
                       <div className="flex items-center gap-4">
                         <div className={`w-2 h-2 rounded-full ${isCritical ? 'bg-red-500 animate-pulse' : 'bg-amber-400'}`}></div>
                         <div>
-                          <div className="font-bold text-slate-800 text-sm">{p.veiculo}</div>
-                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">{p.plano}</div>
+                          <div className="font-bold text-slate-800 text-sm">
+                            {item.veiculo} <span className="text-[10px] font-bold text-slate-400">({item.tipoLabel})</span>
+                          </div>
+                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">{item.plano}</div>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className={`font-black text-sm ${isCritical ? 'text-red-600' : 'text-amber-500'}`}>{restante}h</div>
+                        <div className={`font-black text-sm ${isCritical ? 'text-red-600' : 'text-amber-500'}`}>{item.restante}h</div>
                         <div className="text-[9px] font-bold text-slate-400 uppercase">Restante</div>
                       </div>
                     </div>
@@ -1766,7 +1793,7 @@ function DashboardView() {
                   try {
                     return preventivasData.map((p: any) => {
                       // Status Caminhão
-                      const acumulado = parseInt(p.atual) || 0 - (parseInt(p.ultima) || 0);
+                      const acumulado = (parseInt(p.atual) || 0) - (parseInt(p.ultima) || 0);
                       const restante = (parseInt(p.intervalo) || 500) - acumulado;
                       const percentRemaining = Math.max(2, Math.min(100, Math.round((restante / (parseInt(p.intervalo) || 500)) * 100)));
                       const colorHex = restante < 20 ? '#ef4444' : restante <= 60 ? '#f59e0b' : '#3b82f6';
@@ -1774,7 +1801,7 @@ function DashboardView() {
 
                       // Status Implemento
                       const hasImplemento = p.intervalo_implemento && parseInt(p.intervalo_implemento) > 0;
-                      const acumuladoImp = parseInt(p.atual_implemento) || 0 - (parseInt(p.ultima_implemento) || 0);
+                      const acumuladoImp = (parseInt(p.atual_implemento) || 0) - (parseInt(p.ultima_implemento) || 0);
                       const restanteImp = (parseInt(p.intervalo_implemento) || 500) - acumuladoImp;
                       const percentRemainingImp = Math.max(2, Math.min(100, Math.round((restanteImp / (parseInt(p.intervalo_implemento) || 500)) * 100)));
                       const colorHexImp = restanteImp < 20 ? '#ef4444' : restanteImp <= 60 ? '#f59e0b' : '#3b82f6';
