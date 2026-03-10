@@ -1348,18 +1348,35 @@ function LoginView({ onLogin }: { onLogin: () => void }) {
       return;
     }
 
-    const { data } = await supabase
-      .from('acessos')
-      .select('*')
-      .eq('email', normalizedEmail)
-      .eq('senha', password)
-      .single();
+    // Check locally first
+    try {
+      const localAcessos = JSON.parse(localStorage.getItem('acessos') || '[]');
+      const localUser = localAcessos.find((a: any) => a.email.toLowerCase() === normalizedEmail && a.senha === password);
+      if (localUser) {
+        setLoading(false);
+        finalizeLogin();
+        return;
+      }
+    } catch (e) { }
 
-    setLoading(false);
+    // Check Supabase if local fails
+    try {
+      const { data } = await supabase
+        .from('acessos')
+        .select('*')
+        .eq('email', normalizedEmail)
+        .eq('senha', password)
+        .single();
 
-    if (data) {
-      finalizeLogin();
-    } else {
+      setLoading(false);
+
+      if (data) {
+        finalizeLogin();
+      } else {
+        setError(true);
+      }
+    } catch {
+      setLoading(false);
       setError(true);
     }
   };
@@ -1432,10 +1449,23 @@ function LoginView({ onLogin }: { onLogin: () => void }) {
 
           <button
             type="submit"
-            className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-xl shadow-md transition-colors flex items-center justify-center gap-2 uppercase tracking-wide text-sm mt-2"
+            disabled={loading}
+            className="w-full h-12 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-extrabold rounded-xl shadow-md transition-colors flex items-center justify-center gap-2 uppercase tracking-wide text-sm mt-2"
           >
-            <Lock className="w-4 h-4" />
-            Entrar
+            {loading ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Carregando...
+              </>
+            ) : (
+              <>
+                <Lock className="w-4 h-4" />
+                Entrar
+              </>
+            )}
           </button>
         </form>
       </div>
@@ -1464,6 +1494,14 @@ function PreventivaView() {
             <div className="relative">
               <select className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold appearance-none hover:border-slate-300 transition-colors shadow-sm">
                 <option value="">Selecione o veículo...</option>
+                {(() => {
+                  try {
+                    const frotas = JSON.parse(localStorage.getItem('frotas') || '[]');
+                    return frotas.map((f: any) => (
+                      <option key={f.id} value={f.placa}>{f.placa} ({f.modelo})</option>
+                    ));
+                  } catch { return null; }
+                })()}
               </select>
               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
                 <ChevronDown className="w-4 h-4" />
