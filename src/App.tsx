@@ -2120,7 +2120,7 @@ function PreventivaView() {
   // Implemento
   const [ultimaImplemento, setUltimaImplemento] = useState('');
   const [atualImplemento, setAtualImplemento] = useState('');
-  const [intervaloImplemento, setIntervaloImplemento] = useState('');
+  const [intervaloImplemento, setIntervaloImplemento] = useState('500');
 
   const [dataInicio, setDataInicio] = useState(currentDate);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -2146,7 +2146,7 @@ function PreventivaView() {
     setIntervalo('500');
     setUltimaImplemento('');
     setAtualImplemento('');
-    setIntervaloImplemento('');
+    setIntervaloImplemento('500');
     setDataInicio(currentDate);
     setEditingId(null);
   };
@@ -2396,7 +2396,7 @@ function PreventivaView() {
                   type="number"
                   value={intervaloImplemento}
                   onChange={(e) => setIntervaloImplemento(e.target.value)}
-                  placeholder="0"
+                  placeholder="500"
                   className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-[16px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold hover:border-slate-300 transition-colors shadow-sm"
                 />
                 <p className="text-[11px] text-slate-400 mt-2 font-medium">A cada quantas horas?</p>
