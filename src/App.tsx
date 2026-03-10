@@ -1765,64 +1765,111 @@ function DashboardView() {
                 (() => {
                   try {
                     return preventivasData.map((p: any) => {
-                      const acumulado = parseInt(p.atual) - parseInt(p.ultima);
-                      const restante = parseInt(p.intervalo) - acumulado;
-                      const percentRemaining = Math.max(2, Math.min(100, Math.round((restante / parseInt(p.intervalo)) * 100)));
-
+                      // Status Caminhão
+                      const acumulado = parseInt(p.atual) || 0 - (parseInt(p.ultima) || 0);
+                      const restante = (parseInt(p.intervalo) || 500) - acumulado;
+                      const percentRemaining = Math.max(2, Math.min(100, Math.round((restante / (parseInt(p.intervalo) || 500)) * 100)));
                       const colorHex = restante < 20 ? '#ef4444' : restante <= 60 ? '#f59e0b' : '#3b82f6';
                       const colorShadow = restante < 20 ? 'rgba(239, 68, 68, 0.3)' : restante <= 60 ? 'rgba(245, 158, 11, 0.3)' : 'rgba(59, 130, 246, 0.3)';
 
+                      // Status Implemento
+                      const hasImplemento = p.intervalo_implemento && parseInt(p.intervalo_implemento) > 0;
+                      const acumuladoImp = parseInt(p.atual_implemento) || 0 - (parseInt(p.ultima_implemento) || 0);
+                      const restanteImp = (parseInt(p.intervalo_implemento) || 500) - acumuladoImp;
+                      const percentRemainingImp = Math.max(2, Math.min(100, Math.round((restanteImp / (parseInt(p.intervalo_implemento) || 500)) * 100)));
+                      const colorHexImp = restanteImp < 20 ? '#ef4444' : restanteImp <= 60 ? '#f59e0b' : '#3b82f6';
+                      const colorShadowImp = restanteImp < 20 ? 'rgba(239, 68, 68, 0.3)' : restanteImp <= 60 ? 'rgba(245, 158, 11, 0.3)' : 'rgba(59, 130, 246, 0.3)';
+
                       return (
-                        <div key={p.id} className="flex flex-col items-center relative group w-20 h-full shrink-0">
-                          {/* Top Area: Stats */}
-                          <div className="absolute -top-12 flex flex-col items-center gap-0.5">
+                        <div key={p.id} className="flex flex-col items-center relative group h-full shrink-0 px-2">
 
-                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full text-white bg-slate-900 shadow-sm`}>
-                              {restante}h
-                            </span>
-                          </div>
+                          <div className="flex gap-2 h-full relative" style={{ width: hasImplemento ? '80px' : '40px' }}>
+                            {/* BARRA CAMINHÃO */}
+                            <div className="flex flex-col items-center w-full h-full relative group/bar">
+                              <div className="absolute -top-12 flex flex-col items-center gap-0.5">
+                                <span className="text-[10px] font-black px-2 py-0.5 rounded-full text-white bg-slate-900 shadow-sm z-20">
+                                  {restante}h
+                                </span>
+                              </div>
 
-                          {/* Bar Track (Background) */}
-                          <div className="flex-1 w-8 bg-slate-100/80 rounded-t-2xl flex flex-col justify-end overflow-hidden border border-slate-200/50 shadow-inner">
-                            {/* Actual Bar - Animated height */}
-                            <div
-                              style={{
-                                height: `${percentRemaining}%`,
-                                backgroundColor: colorHex,
-                                boxShadow: `0 0 20px ${colorShadow}`
-                              }}
-                              className="w-full transition-all duration-1000 ease-out cursor-pointer relative group-hover:brightness-110 flex flex-col items-center justify-start pt-4"
-                            >
-                              {/* Glass Effect Line */}
-                              <div className="w-px h-1/2 bg-white/20 absolute left-1/2 -translate-x-1/2 top-0"></div>
-
-                              {/* Vertical Type Label inside bar */}
-                              {percentRemaining > 35 && (
-                                <div className="text-white/40 text-[9px] font-black uppercase tracking-widest rotate-90 origin-center whitespace-nowrap">
-                                  {p.plano}
+                              <div className="flex-1 w-8 bg-slate-100/80 rounded-t-2xl flex flex-col justify-end overflow-hidden border border-slate-200/50 shadow-inner z-10">
+                                <div
+                                  style={{
+                                    height: `${percentRemaining}%`,
+                                    backgroundColor: colorHex,
+                                    boxShadow: `0 0 20px ${colorShadow}`
+                                  }}
+                                  className="w-full transition-all duration-1000 ease-out cursor-pointer relative hover:brightness-110 flex flex-col items-center justify-start pt-4"
+                                >
+                                  <div className="w-px h-1/2 bg-white/20 absolute left-1/2 -translate-x-1/2 top-0"></div>
+                                  {percentRemaining > 35 && (
+                                    <div className="text-white/40 text-[9px] font-black uppercase tracking-widest rotate-90 origin-center whitespace-nowrap">
+                                      {hasImplemento ? "CAM." : p.plano}
+                                    </div>
+                                  )}
                                 </div>
-                              )}
+                              </div>
+
+                              {/* Tooltip Caminhão */}
+                              <div className="opacity-0 group-hover/bar:opacity-100 absolute -top-24 left-1/2 -translate-x-1/2 bg-slate-900/95 backdrop-blur-md text-white px-4 py-2.5 rounded-2xl text-[10px] font-bold whitespace-nowrap z-50 shadow-2xl pointer-events-none transition-all border border-white/10 scale-90 group-hover/bar:scale-100">
+                                <div className="text-blue-400 mb-1 uppercase tracking-widest text-[8px] font-black">{p.veiculo} - CAMINHÃO</div>
+                                <div className="flex items-center gap-2">
+                                  {p.plano}: <span className="text-white font-black text-xs">{restante}h</span>
+                                </div>
+                                <div className="text-slate-500 font-medium mt-0.5">Acumulado: {acumulado}h</div>
+                                <div className="absolute bottom-[-6px] left-1/2 -translate-x-1/2 w-3 h-3 bg-slate-900/95 rotate-45 border-r border-b border-white/10"></div>
+                              </div>
                             </div>
+
+                            {/* BARRA IMPLEMENTO (OPCIONAL) */}
+                            {hasImplemento && (
+                              <div className="flex flex-col items-center w-full h-full relative group/barimp">
+                                <div className="absolute -top-12 flex flex-col items-center gap-0.5">
+                                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full text-white bg-slate-700 shadow-sm z-20">
+                                    {restanteImp}h
+                                  </span>
+                                </div>
+
+                                <div className="flex-1 w-8 bg-slate-100/80 rounded-t-2xl flex flex-col justify-end overflow-hidden border border-slate-200/50 shadow-inner z-10">
+                                  <div
+                                    style={{
+                                      height: `${percentRemainingImp}%`,
+                                      backgroundColor: colorHexImp,
+                                      boxShadow: `0 0 20px ${colorShadowImp}`
+                                    }}
+                                    className="w-full transition-all duration-1000 ease-out cursor-pointer relative hover:brightness-110 flex flex-col items-center justify-start pt-4 opacity-90"
+                                  >
+                                    <div className="w-px h-1/2 bg-white/20 absolute left-1/2 -translate-x-1/2 top-0"></div>
+                                    {percentRemainingImp > 35 && (
+                                      <div className="text-white/40 text-[9px] font-black uppercase tracking-widest rotate-90 origin-center whitespace-nowrap">
+                                        IMP.
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Tooltip Implemento */}
+                                <div className="opacity-0 group-hover/barimp:opacity-100 absolute -top-24 left-1/2 -translate-x-1/2 bg-slate-800/95 backdrop-blur-md text-white px-4 py-2.5 rounded-2xl text-[10px] font-bold whitespace-nowrap z-50 shadow-2xl pointer-events-none transition-all border border-white/10 scale-90 group-hover/barimp:scale-100">
+                                  <div className="text-emerald-400 mb-1 uppercase tracking-widest text-[8px] font-black">{p.veiculo} - IMPLEM.</div>
+                                  <div className="flex items-center gap-2">
+                                    Status: <span className="text-white font-black text-xs">{restanteImp}h</span>
+                                  </div>
+                                  <div className="text-slate-400 font-medium mt-0.5">Acumulado: {acumuladoImp}h</div>
+                                  <div className="absolute bottom-[-6px] left-1/2 -translate-x-1/2 w-3 h-3 bg-slate-800/95 rotate-45 border-r border-b border-white/10"></div>
+                                </div>
+                              </div>
+                            )}
                           </div>
 
-                          {/* Tooltip */}
-                          <div className="opacity-0 group-hover:opacity-100 absolute -top-20 left-1/2 -translate-x-1/2 bg-slate-900/95 backdrop-blur-md text-white px-4 py-2.5 rounded-2xl text-[10px] font-bold whitespace-nowrap z-50 shadow-2xl pointer-events-none transition-all border border-white/10 scale-90 group-hover:scale-100">
-                            <div className="text-blue-400 mb-1 uppercase tracking-widest text-[8px] font-black">{p.veiculo}</div>
-                            <div className="flex items-center gap-2">
-                              {p.plano}: <span className="text-white font-black text-xs">{restante}h</span>
-                            </div>
-                            <div className="text-slate-500 font-medium mt-0.5">Acumulado: {acumulado}h</div>
-                            <div className="absolute bottom-[-6px] left-1/2 -translate-x-1/2 w-3 h-3 bg-slate-900/95 rotate-45 border-r border-b border-white/10"></div>
-                          </div>
-
-                          {/* Diagonal Label - Improved alignment */}
-                          <div className="absolute bottom-[-15px] left-1/2 transform -translate-x-1/2">
+                          {/* Diagonal Label Placa */}
+                          <div className="absolute bottom-[-30px] left-1/2 transform -translate-x-1/2 w-[120px] flex justify-center">
                             <div className="flex flex-col items-center -rotate-45 origin-center mt-6">
-                              <span className="text-[10px] font-black text-slate-800 tracking-tighter bg-white shadow-sm border border-slate-100 px-2 py-1 rounded-lg">
+                              <span className="text-[10px] font-black text-slate-800 tracking-tighter bg-white shadow-sm border border-slate-100 px-2 py-1 rounded-lg whitespace-nowrap">
                                 {p.veiculo}
                               </span>
                             </div>
                           </div>
+
                         </div>
                       );
                     });
