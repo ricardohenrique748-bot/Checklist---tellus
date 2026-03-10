@@ -772,6 +772,70 @@ function ChecklistView() {
 function DatabaseView() {
   const [activeForm, setActiveForm] = useState<'frotas' | 'funcionarios' | 'logins'>('frotas');
 
+  const [frotas, setFrotas] = useState<any[]>(() => {
+    try { return JSON.parse(localStorage.getItem('frotas') || '[]'); } catch { return []; }
+  });
+  const [funcionarios, setFuncionarios] = useState<any[]>(() => {
+    try { return JSON.parse(localStorage.getItem('funcionarios') || '[]'); } catch { return []; }
+  });
+  const [acessos, setAcessos] = useState<any[]>(() => {
+    try { return JSON.parse(localStorage.getItem('acessos') || '[]'); } catch { return []; }
+  });
+
+  const saveToStorage = (key: string, data: any[]) => localStorage.setItem(key, JSON.stringify(data));
+
+  const [frotaPlaca, setFrotaPlaca] = useState('');
+  const [frotaModelo, setFrotaModelo] = useState('');
+  const [frotaTipo, setFrotaTipo] = useState('');
+
+  const [funcNome, setFuncNome] = useState('');
+  const [funcCargo, setFuncCargo] = useState('');
+
+  const [acessoEmail, setAcessoEmail] = useState('');
+  const [acessoSenha, setAcessoSenha] = useState('');
+  const [acessoNivel, setAcessoNivel] = useState('');
+
+  const handleSaveFrota = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!frotaPlaca || !frotaModelo || !frotaTipo) return alert('Preencha todos os campos!');
+    const newData = [...frotas, { id: Date.now(), placa: frotaPlaca, modelo: frotaModelo, tipo: frotaTipo }];
+    setFrotas(newData); saveToStorage('frotas', newData);
+    setFrotaPlaca(''); setFrotaModelo(''); setFrotaTipo('');
+    alert('Veículo cadastrado com sucesso!');
+  };
+
+  const handleSaveFuncionario = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!funcNome || !funcCargo) return alert('Preencha todos os campos!');
+    const newData = [...funcionarios, { id: Date.now(), nome: funcNome, cargo: funcCargo }];
+    setFuncionarios(newData); saveToStorage('funcionarios', newData);
+    setFuncNome(''); setFuncCargo('');
+    alert('Funcionário cadastrado com sucesso!');
+  };
+
+  const handleSaveAcesso = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!acessoEmail || !acessoSenha || !acessoNivel) return alert('Preencha todos os campos!');
+    const newData = [...acessos, { id: Date.now(), email: acessoEmail, senha: acessoSenha, nivel: acessoNivel }];
+    setAcessos(newData); saveToStorage('acessos', newData);
+    setAcessoEmail(''); setAcessoSenha(''); setAcessoNivel('');
+    alert('Acesso cadastrado com sucesso!');
+  };
+
+  const deleteItem = (type: 'frotas' | 'funcionarios' | 'acessos', id: number) => {
+    if (!window.confirm('Tem certeza que deseja excluir?')) return;
+    if (type === 'frotas') {
+      const filtered = frotas.filter(f => f.id !== id);
+      setFrotas(filtered); saveToStorage('frotas', filtered);
+    } else if (type === 'funcionarios') {
+      const filtered = funcionarios.filter(f => f.id !== id);
+      setFuncionarios(filtered); saveToStorage('funcionarios', filtered);
+    } else if (type === 'acessos') {
+      const filtered = acessos.filter(f => f.id !== id);
+      setAcessos(filtered); saveToStorage('acessos', filtered);
+    }
+  };
+
   return (
     <div className="max-w-[850px] mx-auto pb-24">
       <header className="mb-8 pt-2">
@@ -814,11 +878,11 @@ function DatabaseView() {
       </div>
 
       {/* Formulários */}
-      <div className="bg-white rounded-2xl shadow-[0_2px_12px_rgb(0,0,0,0.03)] border border-slate-200 p-6 sm:p-8">
+      <div className="bg-white rounded-2xl shadow-[0_2px_12px_rgb(0,0,0,0.03)] border border-slate-200 p-6 sm:p-8 mb-8">
 
         {/* Formulário de Frotas */}
         {activeForm === 'frotas' && (
-          <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-6" onSubmit={handleSaveFrota}>
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
                 <Truck className="w-5 h-5 text-blue-600" />
@@ -833,6 +897,7 @@ function DatabaseView() {
                 </label>
                 <input
                   type="text"
+                  value={frotaPlaca} onChange={e => setFrotaPlaca(e.target.value)}
                   placeholder="Ex: ABC-1234"
                   className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium placeholder:text-slate-400 hover:border-slate-300 transition-colors shadow-sm"
                 />
@@ -843,6 +908,7 @@ function DatabaseView() {
                 </label>
                 <input
                   type="text"
+                  value={frotaModelo} onChange={e => setFrotaModelo(e.target.value)}
                   placeholder="Ex: Volvo FH 460"
                   className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium placeholder:text-slate-400 hover:border-slate-300 transition-colors shadow-sm"
                 />
@@ -852,7 +918,7 @@ function DatabaseView() {
                   Tipo de Equipamento <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <select className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium appearance-none hover:border-slate-300 transition-colors shadow-sm">
+                  <select value={frotaTipo} onChange={e => setFrotaTipo(e.target.value)} className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium appearance-none hover:border-slate-300 transition-colors shadow-sm">
                     <option value="">Selecione...</option>
                     <option value="caminhao">Caminhão Baú</option>
                     <option value="carreta">Carreta</option>
@@ -869,7 +935,6 @@ function DatabaseView() {
             <div className="pt-6 flex justify-end">
               <button
                 type="submit"
-                onClick={() => alert('Veículo cadastrado com sucesso!')}
                 className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold px-6 py-3.5 rounded-xl shadow-md active:scale-[0.98] transition-all text-[14px] uppercase tracking-wide w-full sm:w-auto"
               >
                 <Save className="w-[18px] h-[18px]" />
@@ -881,7 +946,7 @@ function DatabaseView() {
 
         {/* Formulário de Funcionários */}
         {activeForm === 'funcionarios' && (
-          <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-6" onSubmit={handleSaveFuncionario}>
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center">
                 <Users className="w-5 h-5 text-green-600" />
@@ -896,6 +961,7 @@ function DatabaseView() {
                 </label>
                 <input
                   type="text"
+                  value={funcNome} onChange={e => setFuncNome(e.target.value)}
                   placeholder="Ex: João da Silva"
                   className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium placeholder:text-slate-400 hover:border-slate-300 transition-colors shadow-sm"
                 />
@@ -905,7 +971,7 @@ function DatabaseView() {
                   Cargo / Função <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <select className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium appearance-none hover:border-slate-300 transition-colors shadow-sm">
+                  <select value={funcCargo} onChange={e => setFuncCargo(e.target.value)} className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium appearance-none hover:border-slate-300 transition-colors shadow-sm">
                     <option value="">Selecione...</option>
                     <option value="motorista">Motorista</option>
                     <option value="mecanico">Mecânico</option>
@@ -922,7 +988,6 @@ function DatabaseView() {
             <div className="pt-6 flex justify-end">
               <button
                 type="submit"
-                onClick={() => alert('Funcionário cadastrado com sucesso!')}
                 className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-extrabold px-6 py-3.5 rounded-xl shadow-md active:scale-[0.98] transition-all text-[14px] uppercase tracking-wide w-full sm:w-auto"
               >
                 <Save className="w-[18px] h-[18px]" />
@@ -934,7 +999,7 @@ function DatabaseView() {
 
         {/* Formulário de Acessos */}
         {activeForm === 'logins' && (
-          <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-6" onSubmit={handleSaveAcesso}>
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center">
                 <Key className="w-5 h-5 text-purple-600" />
@@ -949,6 +1014,7 @@ function DatabaseView() {
                 </label>
                 <input
                   type="email"
+                  value={acessoEmail} onChange={e => setAcessoEmail(e.target.value)}
                   placeholder="Ex: usuario@empresa.com"
                   className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium placeholder:text-slate-400 hover:border-slate-300 transition-colors shadow-sm"
                 />
@@ -959,6 +1025,7 @@ function DatabaseView() {
                 </label>
                 <input
                   type="password"
+                  value={acessoSenha} onChange={e => setAcessoSenha(e.target.value)}
                   placeholder="••••••••"
                   className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium placeholder:text-slate-400 hover:border-slate-300 transition-colors shadow-sm"
                 />
@@ -968,7 +1035,7 @@ function DatabaseView() {
                   Nível de Acesso <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <select className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium appearance-none hover:border-slate-300 transition-colors shadow-sm">
+                  <select value={acessoNivel} onChange={e => setAcessoNivel(e.target.value)} className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium appearance-none hover:border-slate-300 transition-colors shadow-sm">
                     <option value="">Selecione...</option>
                     <option value="admin">Administrador (Acesso Total)</option>
                     <option value="operador">Operador (Apenas Checklists)</option>
@@ -984,7 +1051,6 @@ function DatabaseView() {
             <div className="pt-6 flex justify-end">
               <button
                 type="submit"
-                onClick={() => alert('Acesso cadastrado com sucesso!')}
                 className="flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-extrabold px-6 py-3.5 rounded-xl shadow-md active:scale-[0.98] transition-all text-[14px] uppercase tracking-wide w-full sm:w-auto"
               >
                 <Save className="w-[18px] h-[18px]" />
@@ -994,6 +1060,65 @@ function DatabaseView() {
           </form>
         )}
       </div>
+
+      {/* Listagem de Cadastrados */}
+      <div className="bg-white rounded-2xl shadow-[0_2px_12px_rgb(0,0,0,0.03)] border border-slate-200 overflow-hidden">
+        <div className="p-6 border-b border-slate-200 bg-slate-50/50">
+          <h2 className="text-lg font-extrabold text-slate-800 tracking-wide uppercase">Cadastros Realizados</h2>
+        </div>
+
+        {activeForm === 'frotas' && (
+          <div className="divide-y divide-slate-100">
+            {frotas.length === 0 && <div className="p-6 text-center text-slate-500 font-medium tracking-wide text-sm">Nenhum veículo cadastrado.</div>}
+            {frotas.map(f => (
+              <div key={f.id} className="p-4 sm:px-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                <div>
+                  <div className="font-bold text-slate-800">{f.placa} <span className="text-slate-400 font-medium">({f.modelo})</span></div>
+                  <div className="text-xs font-bold text-blue-500 uppercase mt-1">{f.tipo}</div>
+                </div>
+                <button onClick={() => deleteItem('frotas', f.id)} className="text-slate-400 hover:text-red-500 p-2 transition-colors">
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {activeForm === 'funcionarios' && (
+          <div className="divide-y divide-slate-100">
+            {funcionarios.length === 0 && <div className="p-6 text-center text-slate-500 font-medium tracking-wide text-sm">Nenhum funcionário cadastrado.</div>}
+            {funcionarios.map(f => (
+              <div key={f.id} className="p-4 sm:px-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                <div>
+                  <div className="font-bold text-slate-800">{f.nome}</div>
+                  <div className="text-xs font-bold text-green-500 uppercase mt-1">{f.cargo}</div>
+                </div>
+                <button onClick={() => deleteItem('funcionarios', f.id)} className="text-slate-400 hover:text-red-500 p-2 transition-colors">
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {activeForm === 'logins' && (
+          <div className="divide-y divide-slate-100">
+            {acessos.length === 0 && <div className="p-6 text-center text-slate-500 font-medium tracking-wide text-sm">Nenhum acesso cadastrado.</div>}
+            {acessos.map(f => (
+              <div key={f.id} className="p-4 sm:px-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                <div>
+                  <div className="font-bold text-slate-800">{f.email}</div>
+                  <div className="text-xs font-bold text-purple-500 uppercase mt-1">{f.nivel}</div>
+                </div>
+                <button onClick={() => deleteItem('acessos', f.id)} className="text-slate-400 hover:text-red-500 p-2 transition-colors">
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
     </div>
   );
 }
