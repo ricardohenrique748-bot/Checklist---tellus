@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Truck, Calendar, Clock, User, CheckCircle, XCircle, MinusCircle, ChevronUp, ChevronDown, ListChecks, Database, Menu, X, Camera, ImagePlus, Trash2, Users, Key, Save, Droplet, Gauge, ClipboardCheck, BarChart3, Lock, Wrench, Pencil } from 'lucide-react';
+import { Truck, Calendar, Clock, User, CheckCircle, XCircle, MinusCircle, ChevronUp, ChevronDown, ListChecks, Database, Menu, X, Camera, ImagePlus, Trash2, Users, Key, Save, Droplet, Gauge, ClipboardCheck, BarChart3, Lock, Wrench, Pencil, Sun, Moon } from 'lucide-react';
 import { supabase } from './lib/supabase';
 
 const mechanicallyItems = [
@@ -1264,6 +1264,8 @@ function DatabaseView() {
                   <select value={frotaTipo} onChange={e => setFrotaTipo(e.target.value)} className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium appearance-none hover:border-slate-300 transition-colors shadow-sm">
                     <option value="">Selecione...</option>
                     <option value="caminhao">Caminhão Baú</option>
+                    <option value="caminhao_sky">Caminhão Sky</option>
+                    <option value="caminhao_munck">Caminhão Munck</option>
                     <option value="carreta">Carreta</option>
                     <option value="empilhadeira">Empilhadeira</option>
                     <option value="van">Van / Utilitário</option>
@@ -2579,9 +2581,22 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    return (localStorage.getItem('tellus_theme') as 'light' | 'dark') || 'light';
+  });
+
   useEffect(() => {
     localStorage.setItem('tellus_auth', isAuthenticated.toString());
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    localStorage.setItem('tellus_theme', theme);
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
 
   if (!isAuthenticated) {
     return <LoginView onLogin={() => setIsAuthenticated(true)} />;
@@ -2661,6 +2676,23 @@ export default function App() {
         </nav>
 
         <div className="p-4 border-t border-[#1e293b] mt-auto">
+          <button
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-all mb-2"
+          >
+            {theme === 'dark' ? (
+              <>
+                <Sun className="w-[18px] h-[18px]" />
+                MODO CLARO
+              </>
+            ) : (
+              <>
+                <Moon className="w-[18px] h-[18px]" />
+                MODO ESCURO
+              </>
+            )}
+          </button>
+
           <button
             onClick={() => {
               localStorage.removeItem('tellus_auth');
