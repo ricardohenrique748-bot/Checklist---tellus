@@ -968,6 +968,13 @@ function DatabaseView() {
               </h2>
             </div>
 
+            {editingId && (
+              <div className="mb-6 p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-center gap-2 text-blue-700 text-xs font-bold uppercase tracking-wider">
+                <Pencil className="w-3.5 h-3.5" />
+                Modo de Edição Ativo
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-7">
               <div>
                 <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
@@ -1046,6 +1053,13 @@ function DatabaseView() {
               </h2>
             </div>
 
+            {editingId && (
+              <div className="mb-6 p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-center gap-2 text-blue-700 text-xs font-bold uppercase tracking-wider">
+                <Pencil className="w-3.5 h-3.5" />
+                Modo de Edição Ativo
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-7">
               <div className="col-span-1 md:col-span-2">
                 <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
@@ -1114,6 +1128,13 @@ function DatabaseView() {
                 {editingId ? 'Editar Acesso' : 'Cadastro de Acesso'}
               </h2>
             </div>
+
+            {editingId && (
+              <div className="mb-6 p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-center gap-2 text-blue-700 text-xs font-bold uppercase tracking-wider">
+                <Pencil className="w-3.5 h-3.5" />
+                Modo de Edição Ativo
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-7">
               <div className="col-span-1 md:col-span-2">
@@ -1194,10 +1215,10 @@ function DatabaseView() {
                   <div className="text-xs font-bold text-blue-500 uppercase mt-1">{f.tipo}</div>
                 </div>
                 <div className="flex items-center gap-1">
-                  <button onClick={() => startEditFrota(f)} className="text-slate-300 hover:text-blue-500 p-2 transition-colors">
+                  <button onClick={() => startEditFrota(f)} className="text-slate-400 hover:text-blue-500 p-2 transition-colors">
                     <Pencil className="w-4 h-4" />
                   </button>
-                  <button onClick={() => deleteItem('frotas', f.id)} className="text-slate-300 hover:text-red-500 p-2 transition-colors">
+                  <button onClick={() => deleteItem('frotas', f.id)} className="text-slate-400 hover:text-red-500 p-2 transition-colors">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -1216,10 +1237,10 @@ function DatabaseView() {
                   <div className="text-xs font-bold text-green-500 uppercase mt-1">{f.cargo}</div>
                 </div>
                 <div className="flex items-center gap-1">
-                  <button onClick={() => startEditFuncionario(f)} className="text-slate-300 hover:text-blue-500 p-2 transition-colors">
+                  <button onClick={() => startEditFuncionario(f)} className="text-slate-400 hover:text-blue-500 p-2 transition-colors">
                     <Pencil className="w-4 h-4" />
                   </button>
-                  <button onClick={() => deleteItem('funcionarios', f.id)} className="text-slate-300 hover:text-red-500 p-2 transition-colors">
+                  <button onClick={() => deleteItem('funcionarios', f.id)} className="text-slate-400 hover:text-red-500 p-2 transition-colors">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -1238,10 +1259,10 @@ function DatabaseView() {
                   <div className="text-xs font-bold text-purple-500 uppercase mt-1">{f.nivel}</div>
                 </div>
                 <div className="flex items-center gap-1">
-                  <button onClick={() => startEditAcesso(f)} className="text-slate-300 hover:text-blue-500 p-2 transition-colors">
+                  <button onClick={() => startEditAcesso(f)} className="text-slate-400 hover:text-blue-500 p-2 transition-colors">
                     <Pencil className="w-4 h-4" />
                   </button>
-                  <button onClick={() => deleteItem('acessos', f.id)} className="text-slate-300 hover:text-red-500 p-2 transition-colors">
+                  <button onClick={() => deleteItem('acessos', f.id)} className="text-slate-400 hover:text-red-500 p-2 transition-colors">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -1435,7 +1456,7 @@ function DashboardView() {
           </div>
         </div>
 
-        <div className="relative h-[340px] w-full overflow-x-auto overflow-y-hidden pb-16 hide-scrollbar">
+        <div className="relative h-[340px] w-full overflow-x-auto pb-16 hide-scrollbar">
           <div className="min-w-[800px] h-full relative pl-[60px] pr-4">
 
             {/* Y Axis Lines & Labels */}
@@ -1454,8 +1475,8 @@ function DashboardView() {
               </div>
             </div>
 
-            {/* Bars container */}
-            <div className="absolute left-[60px] right-4 top-0 bottom-24 flex items-end px-2 gap-4">
+            {/* Bars container - Changed to items-stretch for height reliability */}
+            <div className="absolute left-[60px] right-4 top-0 bottom-24 flex items-stretch px-2 gap-4">
               {preventivaStats.onTime + preventivaStats.attention + preventivaStats.critical > 0 ? (
                 (() => {
                   const preventivas = JSON.parse(localStorage.getItem('preventivas') || '[]');
@@ -1466,13 +1487,13 @@ function DashboardView() {
 
                     // Style: 100% height columns as per user image
                     const colorClasses = restante <= 0
-                      ? 'from-red-500 to-red-600 shadow-red-100'
+                      ? 'bg-red-500 from-red-500 to-red-600'
                       : restante <= 50
-                        ? 'from-amber-400 to-amber-500 shadow-amber-100'
-                        : 'from-emerald-500 to-emerald-600 shadow-emerald-100';
+                        ? 'bg-amber-400 from-amber-400 to-amber-500'
+                        : 'bg-emerald-500 from-emerald-500 to-emerald-600';
 
                     return (
-                      <div key={p.id} className="flex-1 flex flex-col items-center relative group min-w-[32px] sm:min-w-[40px]">
+                      <div key={p.id} className="h-full flex-1 flex flex-col items-center relative group min-w-[32px] sm:min-w-[40px]">
                         {/* Actual Bar - Matching user image (full vertical) */}
                         <div
                           className={`w-full h-full bg-gradient-to-b ${colorClasses} shadow-md transition-all duration-1000 ease-out cursor-help rounded-t-[4px] relative z-10`}
@@ -1877,6 +1898,35 @@ function PreventivaView() {
       </header>
 
       <form className="bg-white rounded-2xl shadow-[0_2px_12px_rgb(0,0,0,0.03)] border border-slate-200 p-6 sm:p-8 mb-8" onSubmit={handleSavePreventiva}>
+        <div className="flex items-center gap-3 mb-8 pb-4 border-b border-slate-50">
+          <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
+            <Pencil className="w-5 h-5 text-blue-600" />
+          </div>
+          <h2 className="text-lg font-extrabold text-slate-800 tracking-wide uppercase">
+            {editingId ? 'Editar Plano de Preventiva' : 'Nova Programação de Manutenção'}
+          </h2>
+        </div>
+
+        {editingId && (
+          <div className="mb-8 p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-500">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-200">
+                <Pencil className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <div className="text-blue-900 text-[14px] font-black uppercase tracking-tight">Modo de Edição Ativo</div>
+                <div className="text-blue-600/70 text-[11px] font-bold uppercase tracking-wider">Alterando plano selecionado</div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={clearForm}
+              className="px-4 py-2 bg-white border border-blue-200 text-blue-600 text-[11px] font-black uppercase rounded-xl hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all shadow-sm active:scale-95"
+            >
+              Cancelar Edição
+            </button>
+          </div>
+        )}
 
         <div className="space-y-8">
           {/* Veículo */}
@@ -2048,12 +2098,12 @@ function PreventivaView() {
                     <div className={`text-sm sm:text-base font-black ${colorClass}`}>{restante}h</div>
                     <div className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Restante</div>
                   </div>
-                  <div className="flex items-center">
-                    <button onClick={() => startEdit(p)} className="text-slate-300 hover:text-blue-500 p-2 transition-colors">
-                      <Pencil className="w-4 h-4" />
+                  <div className="flex items-center border-l border-slate-100 ml-2 pl-2">
+                    <button onClick={() => startEdit(p)} className="text-slate-400 hover:text-blue-600 p-2.5 transition-all hover:scale-110" title="Editar">
+                      <Pencil className="w-5 h-5" />
                     </button>
-                    <button onClick={() => deletePreventiva(p.id)} className="text-slate-300 hover:text-red-500 p-2 transition-colors">
-                      <Trash2 className="w-4 h-4" />
+                    <button onClick={() => deletePreventiva(p.id)} className="text-slate-400 hover:text-red-600 p-2.5 transition-all hover:scale-110" title="Excluir">
+                      <Trash2 className="w-5 h-5" />
                     </button>
                   </div>
                 </div>
