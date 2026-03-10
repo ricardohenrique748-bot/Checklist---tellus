@@ -1309,8 +1309,8 @@ function DashboardView() {
 
     preventivas.forEach((p: any) => {
       const diff = parseInt(p.intervalo) - (parseInt(p.atual) - parseInt(p.ultima));
-      if (diff <= 0) critical++;
-      else if (diff <= 50) attention++;
+      if (diff < 20) critical++;
+      else if (diff <= 60) attention++;
       else onTime++;
     });
 
@@ -1407,7 +1407,7 @@ function DashboardView() {
             <div className="space-y-3">
               {(() => {
                 const preventivas = JSON.parse(localStorage.getItem('preventivas') || '[]');
-                const needed = preventivas.filter((p: any) => (parseInt(p.intervalo) - (parseInt(p.atual) - parseInt(p.ultima))) <= 50);
+                const needed = preventivas.filter((p: any) => (parseInt(p.intervalo) - (parseInt(p.atual) - parseInt(p.ultima))) <= 60);
 
                 if (needed.length === 0) {
                   return (
@@ -1421,7 +1421,7 @@ function DashboardView() {
 
                 return needed.map((p: any) => {
                   const restante = parseInt(p.intervalo) - (parseInt(p.atual) - parseInt(p.ultima));
-                  const isCritical = restante <= 0;
+                  const isCritical = restante < 20;
                   return (
                     <div key={p.id} className="flex items-center justify-between p-4 rounded-xl bg-white border border-slate-100 shadow-sm">
                       <div className="flex items-center gap-4">
@@ -1482,8 +1482,8 @@ function DashboardView() {
                       const restante = parseInt(p.intervalo) - acumulado;
                       const percentRemaining = Math.max(2, Math.min(100, Math.round((restante / parseInt(p.intervalo)) * 100)));
 
-                      const colorHex = restante <= 0 ? '#ef4444' : restante <= 50 ? '#f59e0b' : '#3b82f6';
-                      const colorShadow = restante <= 0 ? 'rgba(239, 68, 68, 0.3)' : restante <= 50 ? 'rgba(245, 158, 11, 0.3)' : 'rgba(59, 130, 246, 0.3)';
+                      const colorHex = restante < 20 ? '#ef4444' : restante <= 60 ? '#f59e0b' : '#3b82f6';
+                      const colorShadow = restante < 20 ? 'rgba(239, 68, 68, 0.3)' : restante <= 60 ? 'rgba(245, 158, 11, 0.3)' : 'rgba(59, 130, 246, 0.3)';
 
                       return (
                         <div key={p.id} className="flex flex-col items-center relative group w-20 h-full shrink-0">
