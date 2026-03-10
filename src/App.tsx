@@ -1471,7 +1471,7 @@ export default function App() {
         <div className="p-8 hidden md:flex flex-col items-center justify-center gap-2">
           <div className="flex items-center gap-2">
             <Truck className="w-6 h-6 text-blue-500" />
-            <h1 className="text-2xl font-black tracking-wide text-white">TELLUS<span className="text-blue-500">.</span></h1>
+            <h1 className="text-2xl font-black tracking-wide text-white">CHECKLIST<span className="text-blue-500">.</span></h1>
           </div>
         </div>
 
