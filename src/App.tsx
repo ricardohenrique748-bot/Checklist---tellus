@@ -19,12 +19,12 @@ const externalItems = [
 ].map(item => item.toUpperCase());
 
 const lubricationItems = [
-  'Pivot da suspensão dianteira (aplicar graxa até sair velha)',
-  'Pivot da suspensão traseira (se aplicável)',
-  'Pontos de articulação da direção / coluna',
-  'Juntas cardan / junta universal',
-  'Cruzetas do eixo cardan (com graxeiras)',
-  'Buchas e articulações de suspensão (graxa nos pivôs)'
+  'pontos cardan ponta dianteira',
+  'pontos meio do cardan',
+  'pontos final do cardan',
+  'pontos cardan TRAÇÃO',
+  'pontos nas duas rodas dianteiras',
+  'pontos nas rodas traseiras'
 ].map(item => item.toUpperCase());
 
 const calibrationItems = [
