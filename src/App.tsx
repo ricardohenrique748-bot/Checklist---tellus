@@ -1202,22 +1202,44 @@ function LoginView({ onLogin }: { onLogin: () => void }) {
     }
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const normalizedEmail = email.trim().toLowerCase();
+    setLoading(true);
+
     if (normalizedEmail === 'ricardo.luz@eunaman.com.br' && password === '15975321') {
-      setError(false);
-      if (rememberMe) {
-        localStorage.setItem('tellus_email', email);
-        localStorage.setItem('tellus_password', password);
-      } else {
-        localStorage.removeItem('tellus_email');
-        localStorage.removeItem('tellus_password');
-      }
-      onLogin();
+      finalizeLogin();
+      return;
+    }
+
+    const { data } = await supabase
+      .from('acessos')
+      .select('*')
+      .eq('email', normalizedEmail)
+      .eq('senha', password)
+      .single();
+
+    setLoading(false);
+
+    if (data) {
+      finalizeLogin();
     } else {
       setError(true);
     }
+  };
+
+  const finalizeLogin = () => {
+    setError(false);
+    if (rememberMe) {
+      localStorage.setItem('tellus_email', email);
+      localStorage.setItem('tellus_password', password);
+    } else {
+      localStorage.removeItem('tellus_email');
+      localStorage.removeItem('tellus_password');
+    }
+    onLogin();
   };
 
   return (
