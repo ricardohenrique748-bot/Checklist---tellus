@@ -460,14 +460,16 @@ function SignatureField({ label }: { label: string }) {
 function ChecklistView() {
   const [inspectionTab, setInspectionTab] = useState<'checklist' | 'lubrificacao' | 'calibragem'>('checklist');
 
+  const [headerPlaca, setHeaderPlaca] = useState('');
+  const [headerResponsavel, setHeaderResponsavel] = useState(() => localStorage.getItem('tellus_user_name') || '');
+  const [headerData, setHeaderData] = useState(() => new Date().toISOString().split('T')[0]);
+  const [headerHora, setHeaderHora] = useState(() => new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
+
   const [mecanica, setMecanica] = useState<SectionState>({});
   const [eletrica, setEletrica] = useState<SectionState>({});
   const [externa, setExterna] = useState<SectionState>({});
   const [lubrificacao, setLubrificacao] = useState<SectionState>({});
   const [calibragem, setCalibragem] = useState<SectionState>({});
-
-  const currentDate = new Date().toISOString().split('T')[0];
-  const currentTime = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
   // Helpers to update deeply nested states
   const handleUpdateStatus = (setter: React.Dispatch<React.SetStateAction<SectionState>>) => (idx: number, status: Status) => {
@@ -564,9 +566,17 @@ function ChecklistView() {
   const handleSave = () => {
     // Mock save logic
     const inspectionData = {
+      placa: headerPlaca,
+      responsavel: headerResponsavel,
+      data: headerData,
+      hora: headerHora,
       mecanica, eletrica, externa, lubrificacao, calibragem,
-      date: new Date().toISOString()
+      timestamp: new Date().toISOString()
     };
+    if (!headerPlaca || !headerResponsavel) {
+      alert('Por favor, identifique o veículo e o responsável!');
+      return;
+    }
     localStorage.setItem('last_inspection', JSON.stringify(inspectionData));
     alert('Inspeção salva com sucesso!');
   };
@@ -595,7 +605,11 @@ function ChecklistView() {
                 Placa / Equipamento <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <select className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium appearance-none hover:border-slate-300 transition-colors shadow-sm">
+                <select
+                  value={headerPlaca}
+                  onChange={(e) => setHeaderPlaca(e.target.value)}
+                  className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium appearance-none hover:border-slate-300 transition-colors shadow-sm"
+                >
                   <option value="">Selecione o veículo...</option>
                   {(() => {
                     try {
@@ -619,8 +633,9 @@ function ChecklistView() {
               </label>
               <input
                 type="date"
+                value={headerData}
+                onChange={(e) => setHeaderData(e.target.value)}
                 className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium hover:border-slate-300 transition-colors shadow-sm"
-                defaultValue={currentDate}
               />
             </div>
 
@@ -631,8 +646,9 @@ function ChecklistView() {
               </label>
               <input
                 type="time"
+                value={headerHora}
+                onChange={(e) => setHeaderHora(e.target.value)}
                 className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium hover:border-slate-300 transition-colors shadow-sm"
-                defaultValue={currentTime}
               />
             </div>
 
@@ -642,14 +658,27 @@ function ChecklistView() {
                 Nome do Responsável <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <select className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium appearance-none hover:border-slate-300 transition-colors shadow-sm">
+                <select
+                  value={headerResponsavel}
+                  onChange={(e) => setHeaderResponsavel(e.target.value)}
+                  className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium appearance-none hover:border-slate-300 transition-colors shadow-sm"
+                >
                   <option value="">Selecione o responsável...</option>
                   {(() => {
                     try {
-                      const funcionarios = JSON.parse(localStorage.getItem('funcionarios') || '[]');
-                      return funcionarios.map((f: any) => (
-                        <option key={f.id} value={f.nome}>{f.nome} ({f.cargo})</option>
+                      // List system users (Acessos) - prioritizing names
+                      const acessos = JSON.parse(localStorage.getItem('acessos') || '[]');
+                      const systemUsers = acessos.map((u: any) => (
+                        <option key={`a-${u.id}`} value={u.nome || u.email}>{u.nome || u.email} (Usuário)</option>
                       ));
+
+                      // List employees
+                      const funcionarios = JSON.parse(localStorage.getItem('funcionarios') || '[]');
+                      const employees = funcionarios.map((f: any) => (
+                        <option key={`f-${f.id}`} value={f.nome}>{f.nome} ({f.cargo})</option>
+                      ));
+
+                      return [...systemUsers, ...employees];
                     } catch { return null; }
                   })()}
                 </select>
@@ -808,8 +837,10 @@ function DatabaseView() {
   const [frotaTipo, setFrotaTipo] = useState('');
 
   const [funcNome, setFuncNome] = useState('');
+  const [funcEmail, setFuncEmail] = useState('');
   const [funcCargo, setFuncCargo] = useState('');
 
+  const [acessoNome, setAcessoNome] = useState('');
   const [acessoEmail, setAcessoEmail] = useState('');
   const [acessoSenha, setAcessoSenha] = useState('');
   const [acessoNivel, setAcessoNivel] = useState('');
@@ -818,8 +849,8 @@ function DatabaseView() {
 
   const clearForm = () => {
     setFrotaPlaca(''); setFrotaModelo(''); setFrotaTipo('');
-    setFuncNome(''); setFuncCargo('');
-    setAcessoEmail(''); setAcessoSenha(''); setAcessoNivel('');
+    setFuncNome(''); setFuncEmail(''); setFuncCargo('');
+    setAcessoNome(''); setAcessoEmail(''); setAcessoSenha(''); setAcessoNivel('');
     setEditingId(null);
   };
 
@@ -846,10 +877,10 @@ function DatabaseView() {
 
     let newData;
     if (editingId) {
-      newData = funcionarios.map(f => f.id === editingId ? { ...f, nome: funcNome, cargo: funcCargo } : f);
+      newData = funcionarios.map(f => f.id === editingId ? { ...f, nome: funcNome, email: funcEmail, cargo: funcCargo } : f);
       alert('Funcionário atualizado com sucesso!');
     } else {
-      newData = [...funcionarios, { id: Date.now(), nome: funcNome, cargo: funcCargo }];
+      newData = [...funcionarios, { id: Date.now(), nome: funcNome, email: funcEmail, cargo: funcCargo }];
       alert('Funcionário cadastrado com sucesso!');
     }
 
@@ -863,10 +894,10 @@ function DatabaseView() {
 
     let newData;
     if (editingId) {
-      newData = acessos.map(f => f.id === editingId ? { ...f, email: acessoEmail, senha: acessoSenha, nivel: acessoNivel } : f);
+      newData = acessos.map(f => f.id === editingId ? { ...f, nome: acessoNome, email: acessoEmail, senha: acessoSenha, nivel: acessoNivel } : f);
       alert('Acesso atualizado com sucesso!');
     } else {
-      newData = [...acessos, { id: Date.now(), email: acessoEmail, senha: acessoSenha, nivel: acessoNivel }];
+      newData = [...acessos, { id: Date.now(), nome: acessoNome, email: acessoEmail, senha: acessoSenha, nivel: acessoNivel }];
       alert('Acesso cadastrado com sucesso!');
     }
 
@@ -887,12 +918,14 @@ function DatabaseView() {
   const startEditFuncionario = (f: any) => {
     setEditingId(f.id);
     setFuncNome(f.nome);
+    setFuncEmail(f.email || '');
     setFuncCargo(f.cargo);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const startEditAcesso = (f: any) => {
     setEditingId(f.id);
+    setAcessoNome(f.nome || '');
     setAcessoEmail(f.email);
     setAcessoSenha(f.senha);
     setAcessoNivel(f.nivel);
@@ -1076,6 +1109,17 @@ function DatabaseView() {
               </div>
               <div className="col-span-1 md:col-span-2">
                 <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                  E-mail do Funcionário
+                </label>
+                <input
+                  type="email"
+                  value={funcEmail} onChange={e => setFuncEmail(e.target.value)}
+                  placeholder="Ex: joao@empresa.com"
+                  className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium placeholder:text-slate-400 hover:border-slate-300 transition-colors shadow-sm"
+                />
+              </div>
+              <div className="col-span-1 md:col-span-2">
+                <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
                   Cargo / Função <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
@@ -1141,7 +1185,18 @@ function DatabaseView() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-7">
               <div className="col-span-1 md:col-span-2">
                 <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
-                  E-mail <span className="text-red-500">*</span>
+                  Nome do Usuário <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={acessoNome} onChange={e => setAcessoNome(e.target.value)}
+                  placeholder="Ex: Administrativo Dellus"
+                  className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium placeholder:text-slate-400 hover:border-slate-300 transition-colors shadow-sm"
+                />
+              </div>
+              <div className="col-span-1 md:col-span-2">
+                <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                  E-mail de Acesso <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="email"
@@ -1257,8 +1312,9 @@ function DatabaseView() {
             {acessos.map(f => (
               <div key={f.id} className="p-4 sm:px-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
                 <div>
-                  <div className="font-bold text-slate-800">{f.email}</div>
-                  <div className="text-xs font-bold text-purple-500 uppercase mt-1">{f.nivel}</div>
+                  <div className="font-bold text-slate-800">{f.nome || f.email}</div>
+                  <div className="text-xs font-medium text-slate-400">{f.email}</div>
+                  <div className="text-[10px] font-bold text-purple-500 uppercase mt-1">{f.nivel}</div>
                 </div>
                 <div className="flex items-center gap-1">
                   <button onClick={() => startEditAcesso(f)} className="text-slate-400 hover:text-blue-500 p-2 transition-colors">
@@ -1603,22 +1659,19 @@ function LoginView({ onLogin }: { onLogin: () => void }) {
     setLoading(true);
 
     if (normalizedEmail === 'ricardo.luz@eunaman.com.br' && password === '15975321') {
-      finalizeLogin();
+      finalizeLogin({ nome: 'Ricardo Luz', email: normalizedEmail });
       return;
     }
 
     // Check locally first
-    let userFound = false;
+    let userRecord = null;
     try {
       const localAcessos = JSON.parse(localStorage.getItem('acessos') || '[]');
-      const localUser = localAcessos.find((a: any) => a.email.toLowerCase() === normalizedEmail && a.senha === password);
-      if (localUser) {
-        userFound = true;
-      }
+      userRecord = localAcessos.find((a: any) => a.email.toLowerCase() === normalizedEmail && a.senha === password);
     } catch (e) { }
 
     // Check Supabase if local fails
-    if (!userFound) {
+    if (!userRecord) {
       try {
         const { data } = await supabase
           .from('acessos')
@@ -1627,17 +1680,17 @@ function LoginView({ onLogin }: { onLogin: () => void }) {
           .eq('senha', password)
           .single();
 
-        if (data) userFound = true;
+        if (data) userRecord = data;
       } catch { }
     }
 
     setLoading(false);
 
-    if (userFound) {
+    if (userRecord) {
       if (password === 'cadastrar') {
         setShowForceChange(true);
       } else {
-        finalizeLogin();
+        finalizeLogin(userRecord);
       }
     } else {
       setError(true);
@@ -1659,11 +1712,13 @@ function LoginView({ onLogin }: { onLogin: () => void }) {
     const normalizedEmail = email.trim().toLowerCase();
 
     // Update locally
+    let userRecord = null;
     try {
       const localAcessos = JSON.parse(localStorage.getItem('acessos') || '[]');
       const index = localAcessos.findIndex((a: any) => a.email.toLowerCase() === normalizedEmail);
       if (index !== -1) {
         localAcessos[index].senha = newPassword;
+        userRecord = localAcessos[index];
         localStorage.setItem('acessos', JSON.stringify(localAcessos));
       }
     } catch (e) { }
@@ -1678,10 +1733,11 @@ function LoginView({ onLogin }: { onLogin: () => void }) {
 
     setLoading(false);
     setPassword(newPassword);
-    finalizeLogin();
+    if (userRecord) finalizeLogin(userRecord);
+    else onLogin();
   };
 
-  const finalizeLogin = () => {
+  const finalizeLogin = (user: any) => {
     setError(false);
     if (rememberMe) {
       localStorage.setItem('tellus_email', email);
@@ -1690,6 +1746,7 @@ function LoginView({ onLogin }: { onLogin: () => void }) {
       localStorage.removeItem('tellus_email');
       localStorage.removeItem('tellus_password');
     }
+    localStorage.setItem('tellus_user_name', user.nome || user.email);
     onLogin();
   };
 
