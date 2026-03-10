@@ -985,6 +985,8 @@ function DatabaseView() {
                     <option value="mecanico">Mecânico</option>
                     <option value="eletricista">Eletricista</option>
                     <option value="encarregado">Encarregado</option>
+                    <option value="assistente_administrativo">Assistente Administrativo</option>
+                    <option value="analista_pcm">Analista de PCM</option>
                   </select>
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
                     <ChevronDown className="w-4 h-4" />
@@ -1325,6 +1327,9 @@ function LoginView({ onLogin }: { onLogin: () => void }) {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState(false);
+  const [showForceChange, setShowForceChange] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   useEffect(() => {
     const savedEmail = localStorage.getItem('tellus_email');
@@ -1349,36 +1354,77 @@ function LoginView({ onLogin }: { onLogin: () => void }) {
     }
 
     // Check locally first
+    let userFound = false;
     try {
       const localAcessos = JSON.parse(localStorage.getItem('acessos') || '[]');
       const localUser = localAcessos.find((a: any) => a.email.toLowerCase() === normalizedEmail && a.senha === password);
       if (localUser) {
-        setLoading(false);
-        finalizeLogin();
-        return;
+        userFound = true;
       }
     } catch (e) { }
 
     // Check Supabase if local fails
-    try {
-      const { data } = await supabase
-        .from('acessos')
-        .select('*')
-        .eq('email', normalizedEmail)
-        .eq('senha', password)
-        .single();
+    if (!userFound) {
+      try {
+        const { data } = await supabase
+          .from('acessos')
+          .select('*')
+          .eq('email', normalizedEmail)
+          .eq('senha', password)
+          .single();
 
-      setLoading(false);
+        if (data) userFound = true;
+      } catch { }
+    }
 
-      if (data) {
-        finalizeLogin();
+    setLoading(false);
+
+    if (userFound) {
+      if (password === 'cadastrar') {
+        setShowForceChange(true);
       } else {
-        setError(true);
+        finalizeLogin();
       }
-    } catch {
-      setLoading(false);
+    } else {
       setError(true);
     }
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      alert('As senhas não coincidem!');
+      return;
+    }
+    if (newPassword.length < 4) {
+      alert('A senha deve ter pelo menos 4 caracteres!');
+      return;
+    }
+
+    setLoading(true);
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Update locally
+    try {
+      const localAcessos = JSON.parse(localStorage.getItem('acessos') || '[]');
+      const index = localAcessos.findIndex((a: any) => a.email.toLowerCase() === normalizedEmail);
+      if (index !== -1) {
+        localAcessos[index].senha = newPassword;
+        localStorage.setItem('acessos', JSON.stringify(localAcessos));
+      }
+    } catch (e) { }
+
+    // Update Supabase
+    try {
+      await supabase
+        .from('acessos')
+        .update({ senha: newPassword })
+        .eq('email', normalizedEmail);
+    } catch (e) { }
+
+    setLoading(false);
+    setPassword(newPassword);
+    finalizeLogin();
   };
 
   const finalizeLogin = () => {
@@ -1392,6 +1438,57 @@ function LoginView({ onLogin }: { onLogin: () => void }) {
     }
     onLogin();
   };
+
+  if (showForceChange) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-900 px-4">
+        <div className="bg-white p-8 sm:p-10 rounded-2xl shadow-xl w-full max-w-md border border-slate-200">
+          <div className="flex flex-col items-center mb-10">
+            <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-6">
+              <Key className="w-8 h-8 text-blue-600" />
+            </div>
+            <h1 className="text-2xl font-black tracking-tight text-[#0f172a] text-center">Defina sua nova senha</h1>
+            <p className="text-slate-500 mt-2 text-center text-sm font-medium">Por segurança, você precisa alterar sua senha inicial.</p>
+          </div>
+
+          <form onSubmit={handleUpdatePassword} className="space-y-5">
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Nova Senha</label>
+              <input
+                type="password"
+                required
+                autoFocus
+                className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                placeholder="••••••••"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Confirmar Nova Senha</label>
+              <input
+                type="password"
+                required
+                className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full h-12 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-extrabold rounded-xl shadow-md transition-colors flex items-center justify-center gap-2 uppercase tracking-wide text-sm mt-4"
+            >
+              {loading ? 'Salvando...' : 'Salvar e Acessar'}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-900 px-4">
