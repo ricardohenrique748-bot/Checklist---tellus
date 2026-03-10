@@ -456,6 +456,16 @@ function SignatureField({ label }: { label: string }) {
 }
 
 function ChecklistView() {
+  const [viewMode, setViewMode] = useState<'nova' | 'historico' | 'visualizar'>('nova');
+  const [history, setHistory] = useState<any[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('inspecoes_history') || '[]');
+    } catch {
+      return [];
+    }
+  });
+  const [selectedInspection, setSelectedInspection] = useState<any>(null);
+
   const [inspectionTab, setInspectionTab] = useState<'checklist' | 'lubrificacao' | 'calibragem'>('checklist');
 
   const [headerPlaca, setHeaderPlaca] = useState('');
@@ -562,8 +572,13 @@ function ChecklistView() {
     Object.values(calibragem).filter(i => i.status !== null).length;
 
   const handleSave = () => {
-    // Mock save logic
+    if (!headerPlaca || !headerResponsavel) {
+      alert('Por favor, identifique o veículo e o responsável!');
+      return;
+    }
+
     const inspectionData = {
+      id: Date.now(),
       placa: headerPlaca,
       responsavel: headerResponsavel,
       data: headerData,
@@ -571,25 +586,174 @@ function ChecklistView() {
       mecanica, eletrica, externa, lubrificacao, calibragem,
       timestamp: new Date().toISOString()
     };
-    if (!headerPlaca || !headerResponsavel) {
-      alert('Por favor, identifique o veículo e o responsável!');
-      return;
-    }
-    localStorage.setItem('last_inspection', JSON.stringify(inspectionData));
+
+    const newHistory = [inspectionData, ...history];
+    setHistory(newHistory);
+    localStorage.setItem('inspecoes_history', JSON.stringify(newHistory));
+
+    // Clear forms 
+    setMecanica({}); setEletrica({}); setExterna({}); setLubrificacao({}); setCalibragem({});
+    setHeaderPlaca('');
+
     alert('Inspeção salva com sucesso!');
+    setViewMode('historico');
   };
 
-  return (
-    <div className="max-w-[850px] mx-auto pb-24">
-      <header className="mb-6 pt-2">
-        <h1 className="text-[28px] font-extrabold tracking-tight text-slate-800">Inspeção de Veículos</h1>
-        <div className="flex items-center justify-between mt-2">
-          <p className="text-slate-500 font-medium">Realize o preenchimento das abas antes de salvar.</p>
-          <span className="bg-blue-50 text-blue-600 text-[11px] font-black px-3 py-1 rounded-full border border-blue-100">
-            {totalCompleted} / {totalItemsCount} ITENS
-          </span>
+  const handleShare = (inspeccao: any) => {
+    const text = `*Checklist - Equipamento ${inspeccao.placa}*
+*Data:* ${inspeccao.data.split('-').reverse().join('/')} às ${inspeccao.hora}
+*Responsável:* ${inspeccao.responsavel}
+
+Faça login no sistema para ver os detalhes completos.`;
+
+    if (navigator.share) {
+      navigator.share({
+        title: `Checklist ${inspeccao.placa}`,
+        text: text
+      }).catch(console.error);
+    } else {
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+    }
+  };
+
+  const openVisualizacao = (inspeccao: any) => {
+    setSelectedInspection(inspeccao);
+    setViewMode('visualizar');
+
+    // Fill states para o modo de visualização 
+    // É apenas para exibir... Mas podemos só usar o rendered do Checklist normal "desativado"
+    setHeaderPlaca(inspeccao.placa);
+    setHeaderResponsavel(inspeccao.responsavel);
+    setHeaderData(inspeccao.data);
+    setHeaderHora(inspeccao.hora);
+    setMecanica(inspeccao.mecanica || {});
+    setEletrica(inspeccao.eletrica || {});
+    setExterna(inspeccao.externa || {});
+    setLubrificacao(inspeccao.lubrificacao || {});
+    setCalibragem(inspeccao.calibragem || {});
+  }
+
+  const cancelVisualizacao = () => {
+    setSelectedInspection(null);
+    setViewMode('historico');
+    // Clear states 
+    setMecanica({}); setEletrica({}); setExterna({}); setLubrificacao({}); setCalibragem({});
+    setHeaderPlaca('');
+    setHeaderData(new Date().toISOString().split('T')[0]);
+    setHeaderHora(new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
+  }
+
+  if (viewMode === 'historico') {
+    return (
+      <div className="max-w-[850px] mx-auto pb-24">
+        <header className="mb-6 pt-2 flex items-center justify-between">
+          <h1 className="text-[28px] font-extrabold tracking-tight text-slate-800">Histórico de Inspeções</h1>
+          <button
+            onClick={() => setViewMode('nova')}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-lg text-sm transition-colors"
+          >
+            + Nova Inspeção
+          </button>
+        </header>
+
+        <div className="space-y-4">
+          {history.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-xl border border-slate-200">
+              <ClipboardCheck className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+              <p className="text-slate-500 font-medium">Nenhuma inspeção registrada ainda.</p>
+            </div>
+          ) : (
+            history.map((item) => (
+              <div key={item.id} className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Truck className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-800 text-lg">{item.placa}</h3>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm text-slate-500 font-medium">
+                      <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {item.data.split('-').reverse().join('/')}</span>
+                      <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {item.hora}</span>
+                      <span className="flex items-center gap-1"><User className="w-3.5 h-3.5" /> {item.responsavel}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                  <button
+                    onClick={() => openVisualizacao(item)}
+                    className="flex-1 sm:flex-none justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg font-bold text-sm transition-colors flex items-center gap-2"
+                  >
+                    Ver / Imprimir
+                  </button>
+                  <button
+                    onClick={() => handleShare(item)}
+                    className="flex-1 sm:flex-none justify-center bg-emerald-100 hover:bg-emerald-200 text-emerald-700 px-4 py-2 rounded-lg font-bold text-sm transition-colors flex items-center gap-2"
+                  >
+                    Compartilhar
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
+      </div>
+    );
+  }
+
+  // Disable pointer events on the entire form if we are in view mode
+  const pointerEventsClass = viewMode === 'visualizar' ? 'pointer-events-none' : '';
+
+  return (
+    <div className={`max-w-[850px] mx-auto pb-24 ${pointerEventsClass}`}>
+      <header className="mb-6 pt-2 flex items-center justify-between print:hidden">
+        <div>
+          <h1 className="text-[28px] font-extrabold tracking-tight text-slate-800">
+            {viewMode === 'visualizar' ? 'Visualizar Inspeção' : 'Inspeção de Veículos'}
+          </h1>
+          <div className="flex items-center gap-4 mt-2">
+            <p className="text-slate-500 font-medium">
+              {viewMode === 'visualizar' ? 'Modo de leitura apenas.' : 'Realize o preenchimento das abas antes de salvar.'}
+            </p>
+            <span className="bg-blue-50 text-blue-600 text-[11px] font-black px-3 py-1 rounded-full border border-blue-100">
+              {totalCompleted} / {totalItemsCount} ITENS
+            </span>
+          </div>
+        </div>
+        {viewMode === 'nova' && (
+          <button
+            onClick={() => setViewMode('historico')}
+            className="text-blue-600 bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-lg font-bold text-sm transition-colors"
+          >
+            Ver Histórico
+          </button>
+        )}
+        {viewMode === 'visualizar' && (
+          <div className="flex items-center gap-2 pointer-events-auto">
+            <button
+              onClick={() => window.print()}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors"
+            >
+              Imprimir
+            </button>
+            <button
+              onClick={cancelVisualizacao}
+              className="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg font-bold text-sm transition-colors"
+            >
+              Voltar
+            </button>
+          </div>
+        )}
       </header>
+
+      {/* Print header visible only on print */}
+      <div className="hidden print:block mb-8 border-b-2 border-slate-800 pb-4">
+        <h1 className="text-2xl font-bold text-slate-800">RELATÓRIO DE INSPEÇÃO: {headerPlaca}</h1>
+        <div className="mt-2 text-sm text-slate-600 flex gap-4">
+          <span><strong>Data:</strong> {headerData.split('-').reverse().join('/')}</span>
+          <span><strong>Hora:</strong> {headerHora}</span>
+          <span><strong>Responsável:</strong> {headerResponsavel}</span>
+        </div>
+      </div>
 
       <form className="space-y-8" onSubmit={(e) => e.preventDefault()}>
         {/* Identificação */}
@@ -689,7 +853,7 @@ function ChecklistView() {
         </div>
 
         {/* Tabs Internas da Inspeção */}
-        <div className="flex flex-wrap gap-2 mb-8 bg-white p-2 rounded-2xl shadow-sm border border-slate-200">
+        <div className="flex flex-wrap gap-2 mb-8 bg-white p-2 rounded-2xl shadow-sm border border-slate-200 print:hidden pointer-events-auto">
           <button
             onClick={() => setInspectionTab('checklist')}
             className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all ${inspectionTab === 'checklist'
@@ -801,15 +965,17 @@ function ChecklistView() {
           </div>
         </div>
 
-        <div className="pt-8 flex justify-end print:hidden">
-          <button
-            type="button"
-            onClick={handleSave}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-extrabold px-8 py-3.5 rounded-xl shadow-md active:scale-[0.98] transition-all text-[15px] uppercase tracking-wide w-full sm:w-auto"
-          >
-            Salvar Checklist
-          </button>
-        </div>
+        {viewMode === 'nova' && (
+          <div className="pt-8 flex justify-end print:hidden pointer-events-auto">
+            <button
+              type="button"
+              onClick={handleSave}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-extrabold px-8 py-3.5 rounded-xl shadow-md active:scale-[0.98] transition-all text-[15px] uppercase tracking-wide w-full sm:w-auto"
+            >
+              Salvar Checklist
+            </button>
+          </div>
+        )}
       </form>
     </div>
   );
