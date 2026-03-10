@@ -597,6 +597,14 @@ function ChecklistView() {
               <div className="relative">
                 <select className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium appearance-none hover:border-slate-300 transition-colors shadow-sm">
                   <option value="">Selecione o veículo...</option>
+                  {(() => {
+                    try {
+                      const frotas = JSON.parse(localStorage.getItem('frotas') || '[]');
+                      return frotas.map((f: any) => (
+                        <option key={f.id} value={f.placa}>{f.placa} ({f.modelo})</option>
+                      ));
+                    } catch { return null; }
+                  })()}
                 </select>
                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
                   <ChevronDown className="w-4 h-4" />
