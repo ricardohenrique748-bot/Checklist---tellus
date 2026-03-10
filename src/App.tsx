@@ -924,6 +924,7 @@ function DatabaseView() {
             <div className="pt-6 flex justify-end">
               <button
                 type="submit"
+                onClick={() => alert('Funcionário cadastrado com sucesso!')}
                 className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-extrabold px-6 py-3.5 rounded-xl shadow-md active:scale-[0.98] transition-all text-[14px] uppercase tracking-wide w-full sm:w-auto"
               >
                 <Save className="w-[18px] h-[18px]" />
@@ -985,6 +986,7 @@ function DatabaseView() {
             <div className="pt-6 flex justify-end">
               <button
                 type="submit"
+                onClick={() => alert('Acesso cadastrado com sucesso!')}
                 className="flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-extrabold px-6 py-3.5 rounded-xl shadow-md active:scale-[0.98] transition-all text-[14px] uppercase tracking-wide w-full sm:w-auto"
               >
                 <Save className="w-[18px] h-[18px]" />
