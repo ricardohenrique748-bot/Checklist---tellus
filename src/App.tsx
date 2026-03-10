@@ -1773,11 +1773,11 @@ function DashboardView() {
           </div>
         </div>
 
-        <div className="relative h-[340px] w-full overflow-x-auto pb-16 hide-scrollbar">
+        <div className="relative h-[460px] w-full overflow-x-auto pb-16 hide-scrollbar">
           <div className="min-w-[800px] h-full relative pl-[60px] pr-4">
 
             {/* Y Axis Lines & Labels */}
-            <div className="absolute left-0 top-0 bottom-24 w-full pointer-events-none flex flex-col justify-between text-[10px] font-bold text-slate-400">
+            <div className="absolute left-0 top-0 bottom-24 w-full pointer-events-none flex flex-col justify-between text-[11px] font-bold text-slate-400">
 
               <div className="flex items-center w-full relative">
                 <span className="w-10 text-right pr-2">50%</span>
@@ -1787,7 +1787,7 @@ function DashboardView() {
             </div>
 
             {/* Bars container Overhaul */}
-            <div className="absolute left-[60px] right-4 top-16 bottom-24 flex items-end px-4 gap-12 overflow-x-visible">
+            <div className="absolute left-[60px] right-4 top-16 bottom-24 flex items-end px-4 gap-16 overflow-x-visible">
               {preventivaStats.onTime + preventivaStats.attention + preventivaStats.critical > 0 ? (
                 (() => {
                   try {
@@ -1810,27 +1810,27 @@ function DashboardView() {
                       return (
                         <div key={p.id} className="flex flex-col items-center relative group h-full shrink-0 px-2">
 
-                          <div className="flex gap-2 h-full relative" style={{ width: hasImplemento ? '80px' : '40px' }}>
+                          <div className="flex gap-2.5 h-full relative" style={{ width: hasImplemento ? '112px' : '50px' }}>
                             {/* BARRA CAMINHÃO */}
                             <div className="flex flex-col items-center w-full h-full relative group/bar">
                               <div className="absolute -top-12 flex flex-col items-center gap-0.5">
-                                <span className="text-[10px] font-black px-2 py-0.5 rounded-full text-white bg-slate-900 shadow-sm z-20">
+                                <span className="text-[12px] font-black px-3 py-1 rounded-full text-white bg-slate-900 shadow-sm z-20">
                                   {restante}h
                                 </span>
                               </div>
 
-                              <div className="flex-1 w-8 bg-slate-100/80 rounded-t-2xl flex flex-col justify-end overflow-hidden border border-slate-200/50 shadow-inner z-10">
+                              <div className="flex-1 w-12 bg-slate-100/80 rounded-t-2xl flex flex-col justify-end overflow-hidden border border-slate-200/50 shadow-inner z-10">
                                 <div
                                   style={{
                                     height: `${percentRemaining}%`,
                                     backgroundColor: colorHex,
                                     boxShadow: `0 0 20px ${colorShadow}`
                                   }}
-                                  className="w-full transition-all duration-1000 ease-out cursor-pointer relative hover:brightness-110 flex flex-col items-center justify-start pt-4"
+                                  className="w-full transition-all duration-1000 ease-out cursor-pointer relative hover:brightness-110 flex flex-col items-center justify-start pt-6"
                                 >
                                   <div className="w-px h-1/2 bg-white/20 absolute left-1/2 -translate-x-1/2 top-0"></div>
                                   {percentRemaining > 35 && (
-                                    <div className="text-white/40 text-[9px] font-black uppercase tracking-widest rotate-90 origin-center whitespace-nowrap">
+                                    <div className="text-white/60 text-[11px] font-black uppercase tracking-widest rotate-90 origin-center whitespace-nowrap">
                                       {hasImplemento ? "CAM." : p.plano}
                                     </div>
                                   )}
@@ -1852,23 +1852,23 @@ function DashboardView() {
                             {hasImplemento && (
                               <div className="flex flex-col items-center w-full h-full relative group/barimp">
                                 <div className="absolute -top-12 flex flex-col items-center gap-0.5">
-                                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full text-white bg-slate-700 shadow-sm z-20">
+                                  <span className="text-[12px] font-black px-3 py-1 rounded-full text-white bg-slate-700 shadow-sm z-20">
                                     {restanteImp}h
                                   </span>
                                 </div>
 
-                                <div className="flex-1 w-8 bg-slate-100/80 rounded-t-2xl flex flex-col justify-end overflow-hidden border border-slate-200/50 shadow-inner z-10">
+                                <div className="flex-1 w-12 bg-slate-100/80 rounded-t-2xl flex flex-col justify-end overflow-hidden border border-slate-200/50 shadow-inner z-10">
                                   <div
                                     style={{
                                       height: `${percentRemainingImp}%`,
                                       backgroundColor: colorHexImp,
                                       boxShadow: `0 0 20px ${colorShadowImp}`
                                     }}
-                                    className="w-full transition-all duration-1000 ease-out cursor-pointer relative hover:brightness-110 flex flex-col items-center justify-start pt-4 opacity-90"
+                                    className="w-full transition-all duration-1000 ease-out cursor-pointer relative hover:brightness-110 flex flex-col items-center justify-start pt-6 opacity-90"
                                   >
                                     <div className="w-px h-1/2 bg-white/20 absolute left-1/2 -translate-x-1/2 top-0"></div>
                                     {percentRemainingImp > 35 && (
-                                      <div className="text-white/40 text-[9px] font-black uppercase tracking-widest rotate-90 origin-center whitespace-nowrap">
+                                      <div className="text-white/60 text-[11px] font-black uppercase tracking-widest rotate-90 origin-center whitespace-nowrap">
                                         IMP.
                                       </div>
                                     )}
@@ -1889,9 +1889,9 @@ function DashboardView() {
                           </div>
 
                           {/* Diagonal Label Placa */}
-                          <div className="absolute bottom-[-30px] left-1/2 transform -translate-x-1/2 w-[120px] flex justify-center">
+                          <div className="absolute bottom-[-30px] left-1/2 transform -translate-x-1/2 w-[140px] flex justify-center mt-4">
                             <div className="flex flex-col items-center -rotate-45 origin-center mt-6">
-                              <span className="text-[10px] font-black text-slate-800 tracking-tighter bg-white shadow-sm border border-slate-100 px-2 py-1 rounded-lg whitespace-nowrap">
+                              <span className="text-[12px] font-black text-slate-800 tracking-tighter bg-white shadow-sm border border-slate-100 px-3 py-1.5 rounded-lg whitespace-nowrap">
                                 {p.veiculo}
                               </span>
                             </div>
