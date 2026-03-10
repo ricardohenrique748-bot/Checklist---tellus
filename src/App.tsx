@@ -1360,8 +1360,6 @@ function DashboardView() {
                     const percentRemaining = Math.max(0, Math.round((restante / parseInt(p.intervalo)) * 100));
 
                     // Style: 100% height columns as per user image
-                    const barHeight = 100;
-
                     const colorClasses = restante <= 0
                       ? 'from-red-500 to-red-600 shadow-red-100'
                       : restante <= 50
