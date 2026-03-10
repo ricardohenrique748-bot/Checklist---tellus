@@ -875,11 +875,13 @@ function DatabaseView() {
   };
 
   const startEditFrota = (f: any) => {
+    console.log("Iniciando edição de frota:", f);
     setEditingId(f.id);
     setFrotaPlaca(f.placa);
     setFrotaModelo(f.modelo);
     setFrotaTipo(f.tipo);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'auto' });
+    window.scrollTo(0, 0);
   };
 
   const startEditFuncionario = (f: any) => {
@@ -1475,52 +1477,70 @@ function DashboardView() {
               </div>
             </div>
 
-            {/* Bars container - Changed to items-stretch for height reliability */}
-            <div className="absolute left-[60px] right-4 top-0 bottom-24 flex items-stretch px-2 gap-4">
+            {/* Bars container - Back to items-end for standard bar growing */}
+            <div className="absolute left-[60px] right-4 top-0 bottom-24 flex items-end px-2 gap-4">
               {preventivaStats.onTime + preventivaStats.attention + preventivaStats.critical > 0 ? (
                 (() => {
-                  const preventivas = JSON.parse(localStorage.getItem('preventivas') || '[]');
-                  return preventivas.map((p: any) => {
-                    const acumulado = parseInt(p.atual) - parseInt(p.ultima);
-                    const restante = parseInt(p.intervalo) - acumulado;
-                    const percentRemaining = Math.max(0, Math.round((restante / parseInt(p.intervalo)) * 100));
+                  try {
+                    const preventivas = JSON.parse(localStorage.getItem('preventivas') || '[]');
+                    return preventivas.map((p: any) => {
+                      const acumulado = parseInt(p.atual) - parseInt(p.ultima);
+                      const restante = parseInt(p.intervalo) - acumulado;
+                      const percentRemaining = Math.max(2, Math.min(100, Math.round((restante / parseInt(p.intervalo)) * 100)));
 
-                    // Style: 100% height columns as per user image
-                    const colorClasses = restante <= 0
-                      ? 'bg-red-500 from-red-500 to-red-600'
-                      : restante <= 50
-                        ? 'bg-amber-400 from-amber-400 to-amber-500'
-                        : 'bg-emerald-500 from-emerald-500 to-emerald-600';
+                      const colorHex = restante <= 0 ? '#ef4444' : restante <= 50 ? '#f59e0b' : '#10b981';
 
-                    return (
-                      <div key={p.id} className="h-full flex-1 flex flex-col items-center relative group min-w-[32px] sm:min-w-[40px]">
-                        {/* Actual Bar - Matching user image (full vertical) */}
-                        <div
-                          className={`w-full h-full bg-gradient-to-b ${colorClasses} shadow-md transition-all duration-1000 ease-out cursor-help rounded-t-[4px] relative z-10`}
-                        >
-                          {/* Percentage inside bar */}
-                          <div className="absolute inset-x-0 bottom-4 text-center font-black text-[9px] text-white/90 drop-shadow-sm">
-                            {percentRemaining}%
+                      return (
+                        <div key={p.id} className="flex-1 flex flex-col items-center relative group min-w-[48px] h-full">
+                          {/* Top Spacer to push bar down */}
+                          <div className="flex-1 w-full flex flex-col justify-end">
+                            {/* Actual Bar */}
+                            <div
+                              style={{
+                                height: `${percentRemaining}%`,
+                                backgroundColor: colorHex,
+                                borderTopLeftRadius: '12px',
+                                borderTopRightRadius: '12px',
+                                width: '100%'
+                              }}
+                              className="shadow-xl transition-all duration-700 ease-out cursor-pointer relative z-10 hover:brightness-110"
+                            >
+                              {/* Percentage Label */}
+                              <div className="absolute inset-x-0 -top-7 text-center font-black text-[11px] text-slate-600 drop-shadow-sm">
+                                {percentRemaining}%
+                              </div>
+
+                              {/* Vertical Type Label */}
+                              {percentRemaining > 30 && (
+                                <div className="absolute inset-x-0 top-4 text-center font-black text-[10px] text-white/40 uppercase tracking-tighter rotate-90 origin-center whitespace-nowrap">
+                                  {p.plano}
+                                </div>
+                              )}
+
+                              {/* Tooltip */}
+                              <div className="opacity-0 group-hover:opacity-100 absolute -top-16 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-3 py-2 rounded-xl text-[10px] font-bold whitespace-nowrap z-50 shadow-2xl pointer-events-none transition-all border border-slate-700">
+                                <div className="text-slate-400 mb-0.5 uppercase tracking-tighter">{p.veiculo}</div>
+                                <div>{p.plano}: <span className="text-white font-black">{restante}h</span> restantes</div>
+                                <div className="absolute bottom-[-5px] left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-slate-900 rotate-45 border-r border-b border-slate-700"></div>
+                              </div>
+                            </div>
                           </div>
 
-                          {/* Premium Shine Effect */}
-                          <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-inherit"></div>
-
-                          {/* Tooltip */}
-                          <div className="opacity-0 group-hover:opacity-100 absolute -top-16 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-3 py-2 rounded-xl text-[10px] font-bold whitespace-nowrap z-50 shadow-2xl pointer-events-none transition-all border border-slate-700">
-                            <div className="text-slate-400 mb-0.5 uppercase tracking-tighter">{p.veiculo}</div>
-                            <div>{p.plano}: <span className="text-white font-black">{restante}h</span> restantes</div>
-                            <div className="absolute bottom-[-5px] left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-slate-900 rotate-45 border-r border-b border-slate-700"></div>
+                          {/* Diagonal Label - Fixed anchor and rotation */}
+                          <div className="absolute bottom-[-10px] left-1/2 w-0 h-0">
+                            <div className="absolute top-2 left-0 -rotate-45 origin-top-left whitespace-nowrap pl-1">
+                              <div className="text-[11px] font-black text-slate-600 uppercase tracking-tight group-hover:text-blue-600 transition-colors bg-white/80 px-1 rounded">
+                                {p.veiculo}
+                              </div>
+                            </div>
                           </div>
                         </div>
-
-                        {/* Diagonal Label beneath (rotated 45 deg as per user image) */}
-                        <div className="absolute bottom-[-50px] left-1/2 w-[100px] text-left origin-left -rotate-45 whitespace-nowrap pl-2">
-                          <div className="text-[10px] font-black text-slate-500 uppercase tracking-tight">{p.veiculo}</div>
-                        </div>
-                      </div>
-                    );
-                  });
+                      );
+                    });
+                  } catch (err) {
+                    console.error("Erro ao renderizar gráfico:", err);
+                    return null;
+                  }
                 })()
               ) : (
                 <div className="w-full flex flex-col items-center justify-center">
@@ -1873,6 +1893,7 @@ function PreventivaView() {
   };
 
   const startEdit = (p: any) => {
+    console.log("Iniciando edição de preventiva:", p);
     setEditingId(p.id);
     setVeiculo(p.veiculo);
     setPlano(p.plano);
@@ -1880,7 +1901,8 @@ function PreventivaView() {
     setAtual(p.atual);
     setIntervalo(p.intervalo);
     setDataInicio(p.data || currentDate);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'auto' });
+    window.scrollTo(0, 0);
   };
 
   const deletePreventiva = (id: number) => {
