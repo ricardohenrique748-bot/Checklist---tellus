@@ -1903,6 +1903,7 @@ function DashboardView({ isPublic = false }: { isPublic?: boolean }) {
               </div>
             )}
           </div>
+        </div>
       </header>
 
       {/* Filtros */}
@@ -3017,6 +3018,10 @@ export default function App() {
     return (
       <div className="min-h-screen font-sans bg-[#f4f7f9] p-4 sm:p-8">
         <div className="max-w-[1000px] mx-auto">
+          <div className="flex items-center gap-2 mb-8 opacity-50">
+            <Truck className="w-6 h-6 text-blue-500" />
+            <h1 className="text-xl font-black tracking-wide text-slate-900 uppercase">CHECKLIST<span className="text-blue-500">.</span></h1>
+          </div>
           <DashboardView isPublic={true} />
         </div>
       </div>
