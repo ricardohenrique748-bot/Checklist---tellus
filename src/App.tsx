@@ -714,7 +714,9 @@ Faça login no sistema para ver os detalhes completos.`;
                     <Truck className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-slate-800 text-lg">{item.placa}</h3>
+                    <h3 className="font-bold text-slate-800 text-lg">
+                      {item.placa} <span className="text-slate-400 font-medium text-sm uppercase">({frotasLocal.find(f => f.placa === item.placa)?.modelo || 'S/ modelo'})</span>
+                    </h3>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm text-slate-500 font-medium">
                       <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {item.data.split('-').reverse().join('/')}</span>
                       <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {item.hora}</span>
@@ -792,7 +794,10 @@ Faça login no sistema para ver os detalhes completos.`;
 
       {/* Print header visible only on print */}
       <div className="hidden print:block mb-8 border-b-2 border-slate-800 pb-4">
-        <h1 className="text-2xl font-bold text-slate-800">RELATÓRIO DE INSPEÇÃO: {headerPlaca}</h1>
+        <h1 className="text-2xl font-bold text-slate-800">
+          RELATÓRIO DE INSPEÇÃO: {headerPlaca}
+          <span className="text-slate-500 font-medium ml-2">({frotasLocal.find(f => f.placa === headerPlaca)?.modelo || ''})</span>
+        </h1>
         <div className="mt-2 text-sm text-slate-600 flex gap-4">
           <span><strong>Data:</strong> {headerData.split('-').reverse().join('/')}</span>
           <span><strong>Hora:</strong> {headerHora}</span>
@@ -1380,24 +1385,24 @@ function DatabaseView() {
             </div>
 
 
-              <div className="pt-6 flex justify-end gap-3">
-                {editingId && (
-                  <button
-                    type="button"
-                    onClick={clearForm}
-                    className="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-6 py-3.5 rounded-xl transition-all text-[14px] uppercase tracking-wide"
-                  >
-                    Cancelar
-                  </button>
-                )}
+            <div className="pt-6 flex justify-end gap-3">
+              {editingId && (
                 <button
-                  type="submit"
-                  className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold px-6 py-3.5 rounded-xl shadow-md active:scale-[0.98] transition-all text-[14px] uppercase tracking-wide w-full sm:w-auto"
+                  type="button"
+                  onClick={clearForm}
+                  className="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-6 py-3.5 rounded-xl transition-all text-[14px] uppercase tracking-wide"
                 >
-                  <Save className="w-[18px] h-[18px]" />
-                  {editingId ? 'Salvar Alterações' : 'Salvar Veículo'}
+                  Cancelar
                 </button>
-              </div>
+              )}
+              <button
+                type="submit"
+                className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold px-6 py-3.5 rounded-xl shadow-md active:scale-[0.98] transition-all text-[14px] uppercase tracking-wide w-full sm:w-auto"
+              >
+                <Save className="w-[18px] h-[18px]" />
+                {editingId ? 'Salvar Alterações' : 'Salvar Veículo'}
+              </button>
+            </div>
           </form>
         )
         }
@@ -1769,7 +1774,7 @@ function DashboardView({ isPublic = false }: { isPublic?: boolean }) {
 
   useEffect(() => {
     async function loadOptions() {
-      const { data: frotas } = await supabase.from('frotas').select('placa, empresa');
+      const { data: frotas } = await supabase.from('frotas').select('placa, modelo, empresa');
       if (frotas) {
         setFrotasList(frotas);
         const empresasUnicas = Array.from(new Set(frotas.map((f: any) => f.empresa).filter(Boolean))) as string[];
@@ -2083,8 +2088,11 @@ function DashboardView({ isPublic = false }: { isPublic?: boolean }) {
                       <div className="flex items-center gap-4">
                         <div className={`w-2 h-2 rounded-full ${isCritical ? 'bg-red-500 animate-pulse' : 'bg-amber-400'}`}></div>
                         <div>
-                          <div className="font-bold text-slate-800 text-sm">
+                          <div className="font-bold text-slate-800 text-sm leading-tight">
                             {item.veiculo} <span className="text-[10px] font-bold text-slate-400">({item.tipoLabel})</span>
+                            <div className="text-[10px] font-bold text-slate-400 uppercase">
+                              {frotasList.find(f => f.placa === item.veiculo)?.modelo || ''}
+                            </div>
                           </div>
                           <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">{item.plano}</div>
                         </div>
@@ -2183,7 +2191,9 @@ function DashboardView({ isPublic = false }: { isPublic?: boolean }) {
 
                               {/* Tooltip Caminhão */}
                               <div className="opacity-0 group-hover/bar:opacity-100 absolute -top-24 left-1/2 -translate-x-1/2 bg-slate-900/95 backdrop-blur-md text-white px-4 py-2.5 rounded-2xl text-[10px] font-bold whitespace-nowrap z-50 shadow-2xl pointer-events-none transition-all border border-white/10 scale-90 group-hover/bar:scale-100">
-                                <div className="text-blue-400 mb-1 uppercase tracking-widest text-[8px] font-black">{p.veiculo} - CAMINHÃO</div>
+                                <div className="text-blue-400 mb-1 uppercase tracking-widest text-[8px] font-black">
+                                  {p.veiculo} - {frotasList.find(f => f.placa === p.veiculo)?.modelo || 'CAMINHÃO'}
+                                </div>
                                 <div className="flex items-center gap-2">
                                   {p.plano}: <span className="text-white font-black text-xs">{restante}h</span>
                                 </div>
@@ -2945,7 +2955,12 @@ function PreventivaView() {
               <div key={p.id} className="p-5 sm:px-8 flex items-center justify-between hover:bg-slate-50 transition-colors">
                 <div className="flex-1">
                   <div className="flex items-center gap-3">
-                    <span className="font-extrabold text-slate-800">{p.veiculo}</span>
+                    <div className="flex flex-col">
+                      <span className="font-extrabold text-slate-800">{p.veiculo}</span>
+                      <span className="text-[11px] font-bold text-slate-400 -mt-1 uppercase">
+                        {frotasDisponiveis.find(f => f.placa === p.veiculo)?.modelo || 'S/ modelo'}
+                      </span>
+                    </div>
                     <span className="text-[10px] font-black uppercase bg-slate-100 text-slate-500 px-2 py-0.5 rounded">{p.plano}</span>
                   </div>
                   <div className="flex gap-4 mt-2">
