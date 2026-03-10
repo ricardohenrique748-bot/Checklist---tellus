@@ -1972,7 +1972,7 @@ function DashboardView({ isPublic = false }: { isPublic?: boolean }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div className="bg-white rounded-xl shadow-[0_2px_12px_rgb(0,0,0,0.03)] border border-slate-200 p-6 flex flex-col justify-center">
           <div className="flex justify-between items-start mb-4">
             <div className="text-slate-500 font-bold text-sm">INSPEÇÕES HOJE</div>
@@ -1995,16 +1995,6 @@ function DashboardView({ isPublic = false }: { isPublic?: boolean }) {
           <div className="text-3xl font-extrabold text-slate-800">
             {stats.nonConformities}
           </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-[0_2px_12px_rgb(0,0,0,0.03)] border border-slate-200 p-6 flex flex-col justify-center">
-          <div className="flex justify-between items-start mb-4">
-            <div className="text-slate-500 font-bold text-sm">FROTAS ATIVAS</div>
-            <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center">
-              <Truck className="w-4 h-4 text-green-600" />
-            </div>
-          </div>
-          <div className="text-3xl font-extrabold text-slate-800">{stats.activeFrotas}</div>
         </div>
       </div>
 
