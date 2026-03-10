@@ -1840,15 +1840,22 @@ function LoginView({ onLogin }: { onLogin: () => void }) {
     // Check Supabase if local fails
     if (!userRecord) {
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('acessos')
           .select('*')
-          .eq('email', normalizedEmail)
-          .eq('senha', password)
-          .single();
+          .ilike('email', normalizedEmail)
+          .eq('senha', password);
 
-        if (data) userRecord = data;
-      } catch { }
+        if (error) {
+          console.error("Supabase login error:", error);
+        }
+
+        if (data && data.length > 0) {
+          userRecord = data[0];
+        }
+      } catch (e) {
+        console.error("Supabase exception:", e);
+      }
     }
 
     setLoading(false);
@@ -1895,7 +1902,7 @@ function LoginView({ onLogin }: { onLogin: () => void }) {
       await supabase
         .from('acessos')
         .update({ senha: newPassword })
-        .eq('email', normalizedEmail);
+        .ilike('email', normalizedEmail);
     } catch (e) { }
 
     setLoading(false);
