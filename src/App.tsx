@@ -1773,11 +1773,11 @@ function DashboardView() {
           </div>
         </div>
 
-        <div className="relative h-[460px] w-full overflow-x-auto pb-16 hide-scrollbar">
+        <div className="relative h-[500px] w-full overflow-x-auto pb-24 hide-scrollbar">
           <div className="min-w-[800px] h-full relative pl-[60px] pr-4">
 
             {/* Y Axis Lines & Labels */}
-            <div className="absolute left-0 top-0 bottom-24 w-full pointer-events-none flex flex-col justify-between text-[11px] font-bold text-slate-400">
+            <div className="absolute left-0 top-0 bottom-32 w-full pointer-events-none flex flex-col justify-between text-[11px] font-bold text-slate-400">
 
               <div className="flex items-center w-full relative">
                 <span className="w-10 text-right pr-2">50%</span>
@@ -1787,7 +1787,7 @@ function DashboardView() {
             </div>
 
             {/* Bars container Overhaul */}
-            <div className="absolute left-[60px] right-4 top-16 bottom-24 flex items-end px-4 gap-16 overflow-x-visible">
+            <div className="absolute left-[60px] right-4 top-16 bottom-32 flex items-end px-4 gap-16 overflow-visible">
               {preventivaStats.onTime + preventivaStats.attention + preventivaStats.critical > 0 ? (
                 (() => {
                   try {
@@ -1889,9 +1889,9 @@ function DashboardView() {
                           </div>
 
                           {/* Diagonal Label Placa */}
-                          <div className="absolute bottom-[-30px] left-1/2 transform -translate-x-1/2 w-[140px] flex justify-center mt-4">
+                          <div className="absolute bottom-[-30px] left-1/2 transform -translate-x-1/2 w-[140px] flex justify-center mt-4 z-40">
                             <div className="flex flex-col items-center -rotate-45 origin-center mt-6">
-                              <span className="text-[12px] font-black text-slate-800 tracking-tighter bg-white shadow-sm border border-slate-100 px-3 py-1.5 rounded-lg whitespace-nowrap">
+                              <span className="text-[12px] font-black text-slate-800 tracking-tighter bg-white shadow-md border border-slate-200 px-3 py-1.5 rounded-lg whitespace-nowrap">
                                 {p.veiculo}
                               </span>
                             </div>
