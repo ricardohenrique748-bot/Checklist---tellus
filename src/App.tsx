@@ -596,9 +596,6 @@ function ChecklistView() {
               <div className="relative">
                 <select className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium appearance-none hover:border-slate-300 transition-colors shadow-sm">
                   <option value="">Selecione o veículo...</option>
-                  <option value="1">ABC-1234 (Caminhão Baú)</option>
-                  <option value="2">DEF-5678 (Carreta)</option>
-                  <option value="3">GHI-9012 (Empilhadeira)</option>
                 </select>
                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
                   <ChevronDown className="w-4 h-4" />
@@ -1310,9 +1307,7 @@ function PreventivaView() {
             </label>
             <div className="relative">
               <select className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold appearance-none hover:border-slate-300 transition-colors shadow-sm">
-                <option value="">Selecione o veículo</option>
-                <option value="1">ABC-1234 (Caminhão Baú)</option>
-                <option value="2">DEF-5678 (Carreta)</option>
+                <option value="">Selecione o veículo...</option>
               </select>
               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
                 <ChevronDown className="w-4 h-4" />
