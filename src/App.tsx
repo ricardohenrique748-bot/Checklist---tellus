@@ -553,111 +553,132 @@ function ChecklistView() {
   };
 
   const totalItemsCount = mechanicallyItems.length + electricalItems.length + externalItems.length + lubricationItems.length + calibrationItems.length;
+  const totalCompleted =
+    Object.values(mecanica).filter(i => i.status !== null).length +
+    Object.values(eletrica).filter(i => i.status !== null).length +
+    Object.values(externa).filter(i => i.status !== null).length +
+    Object.values(lubrificacao).filter(i => i.status !== null).length +
+    Object.values(calibragem).filter(i => i.status !== null).length;
+
+  const handleSave = () => {
+    // Mock save logic
+    const inspectionData = {
+      mecanica, eletrica, externa, lubrificacao, calibragem,
+      date: new Date().toISOString()
+    };
+    localStorage.setItem('last_inspection', JSON.stringify(inspectionData));
+    alert('Inspeção salva com sucesso!');
+  };
 
   return (
     <div className="max-w-[850px] mx-auto pb-24">
       <header className="mb-6 pt-2">
         <h1 className="text-[28px] font-extrabold tracking-tight text-slate-800">Inspeção de Veículos</h1>
-        <p className="text-slate-500 mt-2 font-medium">Realize o preenchimento de todas as abas (Checklist, Lubrificação, Calibragem) antes de salvar.</p>
+        <div className="flex items-center justify-between mt-2">
+          <p className="text-slate-500 font-medium">Realize o preenchimento das abas antes de salvar.</p>
+          <span className="bg-blue-50 text-blue-600 text-[11px] font-black px-3 py-1 rounded-full border border-blue-100">
+            {totalCompleted} / {totalItemsCount} ITENS
+          </span>
+        </div>
       </header>
 
-      {/* Identificação */}
-      <div className="bg-white rounded-xl shadow-[0_2px_12px_rgb(0,0,0,0.03)] border border-slate-200 mb-8 p-6 sm:p-8">
-        <h2 className="text-sm font-extrabold text-slate-400 tracking-wider mb-6">IDENTIFICAÇÃO</h2>
+      <form className="space-y-8" onSubmit={(e) => e.preventDefault()}>
+        {/* Identificação */}
+        <div className="bg-white rounded-xl shadow-[0_2px_12px_rgb(0,0,0,0.03)] border border-slate-200 mb-8 p-6 sm:p-8">
+          <h2 className="text-sm font-extrabold text-slate-400 tracking-wider mb-6">IDENTIFICAÇÃO</h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-7">
-          <div className="col-span-1 md:col-span-2">
-            <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
-              <Truck className="w-[14px] h-[14px] text-slate-400" />
-              Placa / Equipamento <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <select className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium appearance-none hover:border-slate-300 transition-colors shadow-sm">
-                <option value="">Selecione o veículo...</option>
-                <option value="1">ABC-1234 (Caminhão Baú)</option>
-                <option value="2">DEF-5678 (Carreta)</option>
-                <option value="3">GHI-9012 (Empilhadeira)</option>
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
-                <ChevronDown className="w-4 h-4" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-7">
+            <div className="col-span-1 md:col-span-2">
+              <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                <Truck className="w-[14px] h-[14px] text-slate-400" />
+                Placa / Equipamento <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <select className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium appearance-none hover:border-slate-300 transition-colors shadow-sm">
+                  <option value="">Selecione o veículo...</option>
+                  <option value="1">ABC-1234 (Caminhão Baú)</option>
+                  <option value="2">DEF-5678 (Carreta)</option>
+                  <option value="3">GHI-9012 (Empilhadeira)</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                  <ChevronDown className="w-4 h-4" />
+                </div>
               </div>
             </div>
-          </div>
 
-          <div>
-            <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
-              <Calendar className="w-[14px] h-[14px] text-slate-400" />
-              Data <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="date"
-              className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium hover:border-slate-300 transition-colors shadow-sm"
-              defaultValue={currentDate}
-            />
-          </div>
+            <div>
+              <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                <Calendar className="w-[14px] h-[14px] text-slate-400" />
+                Data <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium hover:border-slate-300 transition-colors shadow-sm"
+                defaultValue={currentDate}
+              />
+            </div>
 
-          <div>
-            <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
-              <Clock className="w-[14px] h-[14px] text-slate-400" />
-              Hora <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="time"
-              className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium hover:border-slate-300 transition-colors shadow-sm"
-              defaultValue={currentTime}
-            />
-          </div>
+            <div>
+              <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                <Clock className="w-[14px] h-[14px] text-slate-400" />
+                Hora <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="time"
+                className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium hover:border-slate-300 transition-colors shadow-sm"
+                defaultValue={currentTime}
+              />
+            </div>
 
-          <div className="col-span-1 md:col-span-2">
-            <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
-              <User className="w-[14px] h-[14px] text-slate-400" />
-              Nome do Responsável <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              placeholder="Ex: Ricardo Luz"
-              className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium placeholder:text-slate-400 hover:border-slate-300 transition-colors shadow-sm"
-            />
+            <div className="col-span-1 md:col-span-2">
+              <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                <User className="w-[14px] h-[14px] text-slate-400" />
+                Nome do Responsável <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                placeholder="Ex: Ricardo Luz"
+                className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium placeholder:text-slate-400 hover:border-slate-300 transition-colors shadow-sm"
+              />
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Tabs Internas da Inspeção */}
-      <div className="flex flex-wrap gap-2 mb-8 bg-white p-2 rounded-2xl shadow-sm border border-slate-200">
-        <button
-          onClick={() => setInspectionTab('checklist')}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all ${inspectionTab === 'checklist'
-            ? 'bg-blue-600 text-white shadow-md'
-            : 'text-slate-500 hover:bg-slate-50'
-            }`}
-        >
-          <ClipboardCheck className="w-[18px] h-[18px]" />
-          Checklist
-        </button>
-        <button
-          onClick={() => setInspectionTab('lubrificacao')}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all ${inspectionTab === 'lubrificacao'
-            ? 'bg-blue-600 text-white shadow-md'
-            : 'text-slate-500 hover:bg-slate-50'
-            }`}
-        >
-          <Droplet className="w-[18px] h-[18px]" />
-          Lubrificação
-        </button>
-        <button
-          onClick={() => setInspectionTab('calibragem')}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all ${inspectionTab === 'calibragem'
-            ? 'bg-blue-600 text-white shadow-md'
-            : 'text-slate-500 hover:bg-slate-50'
-            }`}
-        >
-          <Gauge className="w-[18px] h-[18px]" />
-          Calibragem
-        </button>
-      </div>
+        {/* Tabs Internas da Inspeção */}
+        <div className="flex flex-wrap gap-2 mb-8 bg-white p-2 rounded-2xl shadow-sm border border-slate-200">
+          <button
+            onClick={() => setInspectionTab('checklist')}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all ${inspectionTab === 'checklist'
+              ? 'bg-blue-600 text-white shadow-md'
+              : 'text-slate-500 hover:bg-slate-50'
+              }`}
+          >
+            <ClipboardCheck className="w-[18px] h-[18px]" />
+            Checklist
+          </button>
+          <button
+            onClick={() => setInspectionTab('lubrificacao')}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all ${inspectionTab === 'lubrificacao'
+              ? 'bg-blue-600 text-white shadow-md'
+              : 'text-slate-500 hover:bg-slate-50'
+              }`}
+          >
+            <Droplet className="w-[18px] h-[18px]" />
+            Lubrificação
+          </button>
+          <button
+            onClick={() => setInspectionTab('calibragem')}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all ${inspectionTab === 'calibragem'
+              ? 'bg-blue-600 text-white shadow-md'
+              : 'text-slate-500 hover:bg-slate-50'
+              }`}
+          >
+            <Gauge className="w-[18px] h-[18px]" />
+            Calibragem
+          </button>
+        </div>
 
-      {/* Listas */}
-      <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+        {/* Listas */}
 
         {inspectionTab === 'checklist' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -739,6 +760,7 @@ function ChecklistView() {
         <div className="pt-8 flex justify-end print:hidden">
           <button
             type="button"
+            onClick={handleSave}
             className="bg-blue-600 hover:bg-blue-700 text-white font-extrabold px-8 py-3.5 rounded-xl shadow-md active:scale-[0.98] transition-all text-[15px] uppercase tracking-wide w-full sm:w-auto"
           >
             Salvar Checklist
@@ -849,6 +871,7 @@ function DatabaseView() {
             <div className="pt-6 flex justify-end">
               <button
                 type="submit"
+                onClick={() => alert('Veículo cadastrado com sucesso!')}
                 className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold px-6 py-3.5 rounded-xl shadow-md active:scale-[0.98] transition-all text-[14px] uppercase tracking-wide w-full sm:w-auto"
               >
                 <Save className="w-[18px] h-[18px]" />
@@ -985,22 +1008,24 @@ function DatabaseView() {
   );
 }
 
-function ParametersView() {
-  return (
-    <div className="max-w-[850px] mx-auto pb-24">
-      <header className="mb-6 pt-2">
-        <h1 className="text-[28px] font-extrabold tracking-tight text-slate-800">Parâmetros</h1>
-      </header>
-      <div className="bg-white rounded-xl shadow-[0_2px_12px_rgb(0,0,0,0.03)] border border-slate-200 p-8 flex flex-col items-center justify-center text-center min-h-[400px]">
-        <Settings className="w-16 h-16 text-slate-300 mb-4" />
-        <h2 className="text-xl font-bold text-slate-700 mb-2">Tela de Parâmetros</h2>
-        <p className="text-slate-500 max-w-md">Aqui você poderá gerenciar as peças, categorias e dados do sistema de checklists.</p>
-      </div>
-    </div>
-  );
-}
-
 function DashboardView() {
+  const [stats, setStats] = useState({ inspections: 0, nonConformities: 0 });
+
+  useEffect(() => {
+    const lastInspection = localStorage.getItem('last_inspection');
+    if (lastInspection) {
+      const data = JSON.parse(lastInspection);
+      let ncCount = 0;
+      // Count non-conformities in all sections
+      ['mecanica', 'eletrica', 'externa', 'lubrificacao', 'calibragem'].forEach(sectionKey => {
+        if (data[sectionKey]) {
+          ncCount += Object.values(data[sectionKey] as SectionState).filter(i => i.status === 'NÃO CONFORME').length;
+        }
+      });
+      setStats({ inspections: 1, nonConformities: ncCount });
+    }
+  }, []);
+
   return (
     <div className="max-w-[1000px] mx-auto pb-24">
       <header className="mb-6 pt-2">
@@ -1016,7 +1041,9 @@ function DashboardView() {
               <ListChecks className="w-4 h-4 text-blue-600" />
             </div>
           </div>
-          <div className="text-3xl font-extrabold text-slate-800">0</div>
+          <div className="text-3xl font-extrabold text-slate-800">
+            {stats.inspections}
+          </div>
         </div>
 
         <div className="bg-white rounded-xl shadow-[0_2px_12px_rgb(0,0,0,0.03)] border border-slate-200 p-6 flex flex-col justify-center">
@@ -1026,7 +1053,9 @@ function DashboardView() {
               <XCircle className="w-4 h-4 text-red-600" />
             </div>
           </div>
-          <div className="text-3xl font-extrabold text-slate-800">0</div>
+          <div className="text-3xl font-extrabold text-slate-800">
+            {stats.nonConformities}
+          </div>
         </div>
 
         <div className="bg-white rounded-xl shadow-[0_2px_12px_rgb(0,0,0,0.03)] border border-slate-200 p-6 flex flex-col justify-center">
@@ -1036,7 +1065,7 @@ function DashboardView() {
               <Truck className="w-4 h-4 text-green-600" />
             </div>
           </div>
-          <div className="text-3xl font-extrabold text-slate-800">0</div>
+          <div className="text-3xl font-extrabold text-slate-800">3</div>
         </div>
       </div>
 
@@ -1389,6 +1418,7 @@ function PreventivaView() {
             </button>
             <button
               type="submit"
+              onClick={() => alert('Plano de preventiva ativado com sucesso!')}
               className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-green-600 border-2 border-green-600 text-white font-extrabold text-sm uppercase tracking-wide hover:bg-green-700 hover:border-green-700 shadow-md active:scale-[0.98] transition-all flex items-center justify-center gap-2"
             >
               <Save className="w-[18px] h-[18px]" />
@@ -1401,12 +1431,18 @@ function PreventivaView() {
   );
 }
 
-type Tab = 'dashboard' | 'checklist' | 'preventiva' | 'database' | 'parameters';
+type Tab = 'dashboard' | 'checklist' | 'preventiva' | 'database';
 
 export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [activeTab, setActiveTab] = useState<Tab>('checklist');
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return localStorage.getItem('tellus_auth') === 'true';
+  });
+  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('tellus_auth', isAuthenticated.toString());
+  }, [isAuthenticated]);
 
   if (!isAuthenticated) {
     return <LoginView onLogin={() => setIsAuthenticated(true)} />;
@@ -1483,17 +1519,20 @@ export default function App() {
             BANCO DE DADOS
           </button>
 
-          <button
-            onClick={() => { setActiveTab('parameters'); setIsMobileMenuOpen(false); }}
-            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'parameters'
-              ? 'bg-blue-600/10 text-blue-500'
-              : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-              }`}
-          >
-            <Settings className="w-[18px] h-[18px]" />
-            PARÂMETROS
-          </button>
         </nav>
+
+        <div className="p-4 border-t border-[#1e293b] mt-auto">
+          <button
+            onClick={() => {
+              localStorage.removeItem('tellus_auth');
+              setIsAuthenticated(false);
+            }}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all"
+          >
+            <XCircle className="w-[18px] h-[18px]" />
+            SAIR DO SISTEMA
+          </button>
+        </div>
       </aside>
 
       {/* Main Content Overlay for Mobile */}
@@ -1510,7 +1549,6 @@ export default function App() {
         {activeTab === 'checklist' && <ChecklistView />}
         {activeTab === 'preventiva' && <PreventivaView />}
         {activeTab === 'database' && <DatabaseView />}
-        {activeTab === 'parameters' && <ParametersView />}
       </main>
     </div>
   );
