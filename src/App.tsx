@@ -902,17 +902,7 @@ function DatabaseView() {
                   className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium placeholder:text-slate-400 hover:border-slate-300 transition-colors shadow-sm"
                 />
               </div>
-              <div>
-                <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
-                  Matrícula / CPF <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ex: 123456"
-                  className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium placeholder:text-slate-400 hover:border-slate-300 transition-colors shadow-sm"
-                />
-              </div>
-              <div>
+              <div className="col-span-1 md:col-span-2">
                 <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
                   Cargo / Função <span className="text-red-500">*</span>
                 </label>
