@@ -1320,8 +1320,8 @@ function DashboardView() {
       <div className="bg-white rounded-xl shadow-[0_2px_12px_rgb(0,0,0,0.03)] border border-slate-200 p-6 sm:p-8 mt-8 overflow-hidden pl-2 pb-0">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-12 gap-4 pl-4 sm:pl-6 pt-2">
           <div>
-            <h2 className="text-[22px] font-black text-slate-800 tracking-tight">Status de Preventivas</h2>
-            <p className="text-xs font-bold text-slate-500 mt-1 uppercase tracking-widest">HORAS RESTANTES PARA SERVIÇOS</p>
+            <h2 className="text-[22px] font-black text-slate-800 tracking-tight">Preventivas por Placa</h2>
+            <p className="text-xs font-bold text-slate-500 mt-1 uppercase tracking-widest">Acompanhamento das manutenções programadas</p>
           </div>
           <div className="flex items-center gap-4 text-[10px] font-bold text-slate-500 tracking-widest uppercase">
             <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div> No Prazo</div>
@@ -1330,66 +1330,76 @@ function DashboardView() {
           </div>
         </div>
 
-        <div className="relative h-[300px] w-full overflow-x-auto overflow-y-hidden pb-12 hide-scrollbar">
+        <div className="relative h-[340px] w-full overflow-x-auto overflow-y-hidden pb-16 hide-scrollbar">
           <div className="min-w-[800px] h-full relative pl-[60px] pr-4">
 
             {/* Y Axis Lines & Labels */}
-            <div className="absolute left-0 top-0 bottom-12 w-full pointer-events-none flex flex-col justify-between text-[10px] font-bold text-slate-400">
+            <div className="absolute left-0 top-0 bottom-24 w-full pointer-events-none flex flex-col justify-between text-[10px] font-bold text-slate-400">
               <div className="flex items-center w-full relative">
-                <span className="w-10 text-right pr-2">9000h</span>
+                <span className="w-10 text-right pr-2">100%</span>
                 <div className="flex-1 border-t border-slate-100 border-dashed"></div>
               </div>
               <div className="flex items-center w-full relative">
-                <span className="w-10 text-right pr-2">4500h</span>
+                <span className="w-10 text-right pr-2">50%</span>
                 <div className="flex-1 border-t border-slate-100 border-dashed"></div>
               </div>
               <div className="flex items-center w-full relative z-10">
-                <span className="w-10 text-right pr-2 text-slate-600">0h</span>
+                <span className="w-10 text-right pr-2 text-slate-600">0%</span>
                 <div className="flex-1 border-t-2 border-slate-200"></div>
-              </div>
-              <div className="flex items-center w-full relative">
-                <span className="w-10 text-right pr-2">-4500h</span>
-                <div className="flex-1 border-t border-slate-100 border-dashed"></div>
-              </div>
-              <div className="flex items-center w-full relative">
-                <span className="w-10 text-right pr-2">-9000h</span>
-                <div className="flex-1 border-t border-slate-100 border-dashed"></div>
               </div>
             </div>
 
             {/* Bars container */}
-            <div className={`absolute left-[60px] right-4 top-0 bottom-12 flex ${preventivaStats.onTime + preventivaStats.attention + preventivaStats.critical > 0 ? 'items-end' : 'items-center justify-center'} px-2`}>
+            <div className="absolute left-[60px] right-4 top-0 bottom-24 flex items-end px-2 gap-4">
               {preventivaStats.onTime + preventivaStats.attention + preventivaStats.critical > 0 ? (
                 (() => {
                   const preventivas = JSON.parse(localStorage.getItem('preventivas') || '[]');
                   return preventivas.map((p: any) => {
-                    const restante = parseInt(p.intervalo) - (parseInt(p.atual) - parseInt(p.ultima));
-                    // Scale for visual: max 9000h
-                    const height = Math.abs(restante) / 9000 * 100;
-                    const isNegative = restante < 0;
-                    const color = restante <= 0 ? 'bg-red-500' : restante <= 50 ? 'bg-amber-400' : 'bg-emerald-500';
+                    const acumulado = parseInt(p.atual) - parseInt(p.ultima);
+                    const restante = parseInt(p.intervalo) - acumulado;
+                    const percentRemaining = Math.max(0, Math.round((restante / parseInt(p.intervalo)) * 100));
+
+                    // Style: 100% height columns as per user image
+                    const barHeight = 100;
+
+                    const colorClasses = restante <= 0
+                      ? 'from-red-500 to-red-600 shadow-red-100'
+                      : restante <= 50
+                        ? 'from-amber-400 to-amber-500 shadow-amber-100'
+                        : 'from-emerald-500 to-emerald-600 shadow-emerald-100';
 
                     return (
-                      <div key={p.id} className="flex-1 flex flex-col items-center group relative h-full">
-                        <div className="absolute bottom-[-24px] text-[9px] font-black text-slate-400 truncate w-full text-center px-1 uppercase">{p.veiculo}</div>
+                      <div key={p.id} className="flex-1 flex flex-col items-center relative group min-w-[32px] sm:min-w-[40px]">
+                        {/* Actual Bar - Matching user image (full vertical) */}
                         <div
-                          className={`w-12 sm:w-16 rounded-t-lg transition-all duration-500 cursor-help ${color} hover:brightness-110 shadow-sm relative`}
-                          style={{
-                            height: `${Math.min(height, 100)}%`,
-                            marginBottom: isNegative ? '-2px' : '0'
-                          }}
+                          className={`w-full h-full bg-gradient-to-b ${colorClasses} shadow-md transition-all duration-1000 ease-out cursor-help rounded-t-[4px] relative z-10`}
                         >
-                          <div className="opacity-0 group-hover:opacity-100 absolute -top-12 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold whitespace-nowrap z-30 shadow-xl pointer-events-none">
-                            {p.plano}: {restante}h restantes
-                            <div className="absolute bottom-[-4px] left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-800 rotate-45"></div>
+                          {/* Percentage inside bar */}
+                          <div className="absolute inset-x-0 bottom-4 text-center font-black text-[9px] text-white/90 drop-shadow-sm">
+                            {percentRemaining}%
                           </div>
+
+                          {/* Premium Shine Effect */}
+                          <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-inherit"></div>
+
+                          {/* Tooltip */}
+                          <div className="opacity-0 group-hover:opacity-100 absolute -top-16 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-3 py-2 rounded-xl text-[10px] font-bold whitespace-nowrap z-50 shadow-2xl pointer-events-none transition-all border border-slate-700">
+                            <div className="text-slate-400 mb-0.5 uppercase tracking-tighter">{p.veiculo}</div>
+                            <div>{p.plano}: <span className="text-white font-black">{restante}h</span> restantes</div>
+                            <div className="absolute bottom-[-5px] left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-slate-900 rotate-45 border-r border-b border-slate-700"></div>
+                          </div>
+                        </div>
+
+                        {/* Diagonal Label beneath (rotated 45 deg as per user image) */}
+                        <div className="absolute bottom-[-50px] left-1/2 w-[100px] text-left origin-left -rotate-45 whitespace-nowrap pl-2">
+                          <div className="text-[10px] font-black text-slate-500 uppercase tracking-tight">{p.veiculo}</div>
                         </div>
                       </div>
                     );
                   });
                 })()
               ) : (
-                <div className="flex flex-col items-center">
+                <div className="w-full flex flex-col items-center justify-center">
                   <BarChart3 className="w-10 h-10 text-slate-200 mb-3" />
                   <span className="text-sm font-bold text-slate-400">Sem dados de manutenção para exibir</span>
                 </div>
