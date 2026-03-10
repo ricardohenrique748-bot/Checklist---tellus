@@ -1831,7 +1831,10 @@ function LoginView({ onLogin }: { onLogin: () => void }) {
     let userRecord = null;
     try {
       const localAcessos = JSON.parse(localStorage.getItem('acessos') || '[]');
-      userRecord = localAcessos.find((a: any) => a.email.toLowerCase() === normalizedEmail && a.senha === password);
+      userRecord = localAcessos.find((a: any) => {
+        const aEmail = a?.email || '';
+        return aEmail.trim().toLowerCase() === normalizedEmail && a.senha === password;
+      });
     } catch (e) { }
 
     // Check Supabase if local fails
