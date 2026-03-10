@@ -2111,9 +2111,17 @@ function PreventivaView() {
 
   const [veiculo, setVeiculo] = useState('');
   const [plano, setPlano] = useState('');
+
+  // Caminhão
   const [ultima, setUltima] = useState('');
   const [atual, setAtual] = useState('');
   const [intervalo, setIntervalo] = useState('500');
+
+  // Implemento
+  const [ultimaImplemento, setUltimaImplemento] = useState('');
+  const [atualImplemento, setAtualImplemento] = useState('');
+  const [intervaloImplemento, setIntervaloImplemento] = useState('');
+
   const [dataInicio, setDataInicio] = useState(currentDate);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [preventivas, setPreventivas] = useState<any[]>([]);
@@ -2136,6 +2144,9 @@ function PreventivaView() {
     setUltima('');
     setAtual('');
     setIntervalo('500');
+    setUltimaImplemento('');
+    setAtualImplemento('');
+    setIntervaloImplemento('');
     setDataInicio(currentDate);
     setEditingId(null);
   };
@@ -2143,7 +2154,7 @@ function PreventivaView() {
   const handleSavePreventiva = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!veiculo || !plano || !atual || !intervalo) {
-      alert('Preencha os campos obrigatórios!');
+      alert('Preencha os campos obrigatórios! (Caminhão/Veículo é obrigatório)');
       return;
     }
 
@@ -2154,6 +2165,9 @@ function PreventivaView() {
         ultima: ultima || '0',
         atual,
         intervalo,
+        ultima_implemento: ultimaImplemento || '0',
+        atual_implemento: atualImplemento || '0',
+        intervalo_implemento: intervaloImplemento || '0',
         data: dataInicio
       };
 
@@ -2185,6 +2199,9 @@ function PreventivaView() {
     setUltima(p.ultima);
     setAtual(p.atual);
     setIntervalo(p.intervalo);
+    setUltimaImplemento(p.ultima_implemento || '');
+    setAtualImplemento(p.atual_implemento || '');
+    setIntervaloImplemento(p.intervalo_implemento || '');
     setDataInicio(p.data || currentDate);
     window.scrollTo({ top: 0, behavior: 'auto' });
     window.scrollTo(0, 0);
@@ -2285,50 +2302,105 @@ function PreventivaView() {
 
           <div className="h-px bg-slate-100 my-2"></div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Última Revisão */}
-            <div>
-              <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
-                Última Revisão (H)
-              </label>
-              <input
-                type="number"
-                value={ultima}
-                onChange={(e) => setUltima(e.target.value)}
-                placeholder="0"
-                className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-[16px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold hover:border-slate-300 transition-colors shadow-sm"
-              />
-              <p className="text-[11px] text-slate-400 mt-2 font-medium">Horímetro da última parada.</p>
-            </div>
+          <div>
+            <h3 className="text-[13px] font-black text-slate-800 uppercase tracking-widest mb-4">Dados do Caminhão/Cavalo</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Última Revisão */}
+              <div>
+                <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                  Última Revisão (H)
+                </label>
+                <input
+                  type="number"
+                  value={ultima}
+                  onChange={(e) => setUltima(e.target.value)}
+                  placeholder="0"
+                  className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-[16px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold hover:border-slate-300 transition-colors shadow-sm"
+                />
+                <p className="text-[11px] text-slate-400 mt-2 font-medium">Horímetro da última parada.</p>
+              </div>
 
-            {/* Atual */}
-            <div>
-              <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
-                Atual (H) <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="number"
-                value={atual}
-                onChange={(e) => setAtual(e.target.value)}
-                placeholder="0"
-                className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-[16px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold hover:border-slate-300 transition-colors shadow-sm"
-              />
-              <p className="text-[11px] text-slate-400 mt-2 font-medium">Horímetro lido hoje.</p>
-            </div>
+              {/* Atual */}
+              <div>
+                <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                  Atual (H) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  value={atual}
+                  onChange={(e) => setAtual(e.target.value)}
+                  placeholder="0"
+                  className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-[16px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold hover:border-slate-300 transition-colors shadow-sm"
+                />
+                <p className="text-[11px] text-slate-400 mt-2 font-medium">Horímetro lido hoje.</p>
+              </div>
 
-            {/* Intervalo */}
-            <div>
-              <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
-                Intervalo (H) <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="number"
-                value={intervalo}
-                onChange={(e) => setIntervalo(e.target.value)}
-                placeholder="500"
-                className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-[16px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold hover:border-slate-300 transition-colors shadow-sm"
-              />
-              <p className="text-[11px] text-slate-400 mt-2 font-medium">A cada quantas horas?</p>
+              {/* Intervalo */}
+              <div>
+                <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                  Intervalo (H) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  value={intervalo}
+                  onChange={(e) => setIntervalo(e.target.value)}
+                  placeholder="500"
+                  className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-[16px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold hover:border-slate-300 transition-colors shadow-sm"
+                />
+                <p className="text-[11px] text-slate-400 mt-2 font-medium">A cada quantas horas?</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="h-px bg-slate-100 my-2"></div>
+
+          <div>
+            <h3 className="text-[13px] font-black text-slate-800 uppercase tracking-widest mb-4">Dados do Implemento</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Última Revisão Implemento */}
+              <div>
+                <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                  Última Revisão (H)
+                </label>
+                <input
+                  type="number"
+                  value={ultimaImplemento}
+                  onChange={(e) => setUltimaImplemento(e.target.value)}
+                  placeholder="0"
+                  className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-[16px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold hover:border-slate-300 transition-colors shadow-sm"
+                />
+                <p className="text-[11px] text-slate-400 mt-2 font-medium">Horímetro da última parada.</p>
+              </div>
+
+              {/* Atual Implemento */}
+              <div>
+                <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                  Atual (H)
+                </label>
+                <input
+                  type="number"
+                  value={atualImplemento}
+                  onChange={(e) => setAtualImplemento(e.target.value)}
+                  placeholder="0"
+                  className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-[16px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold hover:border-slate-300 transition-colors shadow-sm"
+                />
+                <p className="text-[11px] text-slate-400 mt-2 font-medium">Horímetro lido hoje.</p>
+              </div>
+
+              {/* Intervalo Implemento */}
+              <div>
+                <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                  Intervalo (H)
+                </label>
+                <input
+                  type="number"
+                  value={intervaloImplemento}
+                  onChange={(e) => setIntervaloImplemento(e.target.value)}
+                  placeholder="0"
+                  className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-[16px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold hover:border-slate-300 transition-colors shadow-sm"
+                />
+                <p className="text-[11px] text-slate-400 mt-2 font-medium">A cada quantas horas?</p>
+              </div>
             </div>
           </div>
 
