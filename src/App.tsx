@@ -1215,7 +1215,8 @@ function LoginView({ onLogin }: { onLogin: () => void }) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (email === 'ricardo.luz@eunaman.com.br' && password === '15975321') {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (normalizedEmail === 'ricardo.luz@eunaman.com.br' && password === '15975321') {
       setError(false);
       if (rememberMe) {
         localStorage.setItem('tellus_email', email);
@@ -1236,7 +1237,7 @@ function LoginView({ onLogin }: { onLogin: () => void }) {
         <div className="flex flex-col items-center mb-10">
           <div className="flex items-center justify-center gap-2 mb-6">
             <Truck className="w-8 h-8 text-blue-600" />
-            <h1 className="text-[32px] font-black tracking-wide text-[#0f172a]">TELLUS<span className="text-blue-600">.</span></h1>
+            <h1 className="text-[32px] font-black tracking-wide text-[#0f172a]">CHECKLIST<span className="text-blue-600">.</span></h1>
           </div>
           <h2 className="text-base font-bold text-slate-600 text-center">Acesso ao Sistema</h2>
         </div>
@@ -1454,7 +1455,7 @@ export default function App() {
       <div className="md:hidden flex items-center justify-between p-4 bg-slate-900 text-white shadow-md z-20 print:hidden">
         <div className="font-extrabold tracking-wide text-lg flex items-center gap-2">
           <Truck className="w-5 h-5 text-blue-500" />
-          TELLUS<span className="text-blue-500">.</span>
+          CHECKLIST<span className="text-blue-500">.</span>
         </div>
         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
           {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
