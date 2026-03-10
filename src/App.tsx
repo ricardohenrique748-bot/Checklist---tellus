@@ -1760,7 +1760,7 @@ function DatabaseView() {
 
 function DashboardView({ isPublic = false }: { isPublic?: boolean }) {
   const [stats, setStats] = useState({ inspections: 0, nonConformities: 0, activeFrotas: 0 });
-  const [preventivaStats, setPreventivaStats] = useState({ onTime: 0, attention: 0, critical: 0 });
+  const [preventivaStats, setPreventivaStats] = useState({ onTime: 0, attention: 0, critical: 0, truckAttention: 0, implementAttention: 0 });
   const [preventivasData, setPreventivasData] = useState<any[]>([]);
 
   const [filterStartDate, setFilterStartDate] = useState('');
@@ -1848,29 +1848,42 @@ function DashboardView({ isPublic = false }: { isPublic?: boolean }) {
 
       const { data: prevData } = await prevQuery;
       let onTime = 0, attention = 0, critical = 0;
+      let truckAttention = 0, implementAttention = 0;
 
       if (prevData) {
         prevData.forEach((p: any) => {
           // Status Caminhão
           const acumulado = (parseInt(p.atual) || 0) - (parseInt(p.ultima) || 0);
           const diff = (parseInt(p.intervalo) || 500) - acumulado;
-          if (diff < 20) critical++;
-          else if (diff <= 60) attention++;
-          else onTime++;
+          if (diff < 20) {
+            critical++;
+            truckAttention++;
+          } else if (diff <= 60) {
+            attention++;
+            truckAttention++;
+          } else {
+            onTime++;
+          }
 
           // Status Implemento
           if (p.intervalo_implemento && parseInt(p.intervalo_implemento) > 0) {
             const acumuladoImp = (parseInt(p.atual_implemento) || 0) - (parseInt(p.ultima_implemento) || 0);
             const diffImp = (parseInt(p.intervalo_implemento) || 500) - acumuladoImp;
-            if (diffImp < 20) critical++;
-            else if (diffImp <= 60) attention++;
-            else onTime++;
+            if (diffImp < 20) {
+              critical++;
+              implementAttention++;
+            } else if (diffImp <= 60) {
+              attention++;
+              implementAttention++;
+            } else {
+              onTime++;
+            }
           }
         });
         setPreventivasData(prevData);
       }
 
-      setPreventivaStats({ onTime, attention, critical });
+      setPreventivaStats({ onTime, attention, critical, truckAttention, implementAttention });
       setLoading(false);
     }
 
@@ -2013,7 +2026,7 @@ function DashboardView({ isPublic = false }: { isPublic?: boolean }) {
 
         <div className="space-y-8">
           {/* KPI's */}
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-6">
             <div className="flex items-start gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
               <div className="w-3 h-3 rounded-full bg-emerald-500 mt-1.5 shrink-0"></div>
               <div>
@@ -2030,11 +2043,27 @@ function DashboardView({ isPublic = false }: { isPublic?: boolean }) {
               </div>
             </div>
 
-            <div className="flex items-start gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100 col-span-2 lg:col-span-1">
+            <div className="flex items-start gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
               <div className="w-3 h-3 rounded-full bg-red-500 mt-1.5 shrink-0"></div>
               <div>
                 <div className="text-3xl font-black text-slate-800">{preventivaStats.critical}</div>
                 <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mt-1">Atrasadas</div>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
+              <div className="w-3 h-3 rounded-full bg-blue-500 mt-1.5 shrink-0"></div>
+              <div>
+                <div className="text-3xl font-black text-slate-800">{preventivaStats.truckAttention}</div>
+                <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mt-1">Cam. Vencidos/Vencer</div>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100 col-span-2 lg:col-span-1">
+              <div className="w-3 h-3 rounded-full bg-indigo-500 mt-1.5 shrink-0"></div>
+              <div>
+                <div className="text-3xl font-black text-slate-800">{preventivaStats.implementAttention}</div>
+                <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mt-1">Imp. Vencidos/Vencer</div>
               </div>
             </div>
           </div>
