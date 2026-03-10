@@ -28,12 +28,10 @@ const lubricationItems = [
 ].map(item => item.toUpperCase());
 
 const calibrationItems = [
-  'Dianteiro Esquerdo', 'Dianteiro Direito',
-  'Tração Esquerdo Externo', 'Tração Esquerdo Interno',
-  'Tração Direito Externo', 'Tração Direito Interno',
-  'Truck / 3º Eixo Esq. Ext.', 'Truck / 3º Eixo Esq. Int.',
-  'Truck / 3º Eixo Dir. Ext.', 'Truck / 3º Eixo Dir. Int.',
-  'Estepe 1', 'Estepe 2'
+  'INTERNOS:',
+  'EXTERNOS:',
+  'DIANTEIROS:',
+  'ESTEPE:'
 ].map(item => item.toUpperCase());
 
 type Status = 'CONFORME' | 'NÃO CONFORME' | 'N/A' | null;
