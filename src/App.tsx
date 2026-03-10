@@ -1151,21 +1151,42 @@ function DatabaseView() {
 }
 
 function DashboardView() {
-  const [stats, setStats] = useState({ inspections: 0, nonConformities: 0 });
+  const [stats, setStats] = useState({ inspections: 0, nonConformities: 0, activeFrotas: 0 });
+  const [preventivaStats, setPreventivaStats] = useState({ onTime: 0, attention: 0, critical: 0 });
 
   useEffect(() => {
+    // Inspections
     const lastInspection = localStorage.getItem('last_inspection');
+    let inspectionsCount = 0;
+    let ncCount = 0;
     if (lastInspection) {
       const data = JSON.parse(lastInspection);
-      let ncCount = 0;
-      // Count non-conformities in all sections
+      inspectionsCount = 1;
       ['mecanica', 'eletrica', 'externa', 'lubrificacao', 'calibragem'].forEach(sectionKey => {
         if (data[sectionKey]) {
           ncCount += Object.values(data[sectionKey] as SectionState).filter(i => i.status === 'NÃO CONFORME').length;
         }
       });
-      setStats({ inspections: 1, nonConformities: ncCount });
     }
+
+    // Frotas
+    const frotas = JSON.parse(localStorage.getItem('frotas') || '[]');
+    const activeFrotas = frotas.length;
+
+    setStats({ inspections: inspectionsCount, nonConformities: ncCount, activeFrotas });
+
+    // Preventivas
+    const preventivas = JSON.parse(localStorage.getItem('preventivas') || '[]');
+    let onTime = 0, attention = 0, critical = 0;
+
+    preventivas.forEach((p: any) => {
+      const diff = parseInt(p.intervalo) - (parseInt(p.atual) - parseInt(p.ultima));
+      if (diff <= 0) critical++;
+      else if (diff <= 50) attention++;
+      else onTime++;
+    });
+
+    setPreventivaStats({ onTime, attention, critical });
   }, []);
 
   return (
@@ -1207,7 +1228,7 @@ function DashboardView() {
               <Truck className="w-4 h-4 text-green-600" />
             </div>
           </div>
-          <div className="text-3xl font-extrabold text-slate-800">3</div>
+          <div className="text-3xl font-extrabold text-slate-800">{stats.activeFrotas}</div>
         </div>
       </div>
 
@@ -1228,25 +1249,25 @@ function DashboardView() {
           {/* KPI's */}
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="flex items-start gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
-              <div className="w-3 h-3 rounded-full bg-slate-300 mt-1.5 shrink-0"></div>
+              <div className="w-3 h-3 rounded-full bg-emerald-500 mt-1.5 shrink-0"></div>
               <div>
-                <div className="text-3xl font-black text-slate-400">0</div>
+                <div className="text-3xl font-black text-slate-800">{preventivaStats.onTime}</div>
                 <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mt-1">No Prazo</div>
               </div>
             </div>
 
             <div className="flex items-start gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
-              <div className="w-3 h-3 rounded-full bg-slate-300 mt-1.5 shrink-0"></div>
+              <div className="w-3 h-3 rounded-full bg-amber-400 mt-1.5 shrink-0"></div>
               <div>
-                <div className="text-3xl font-black text-slate-400">0</div>
+                <div className="text-3xl font-black text-slate-800">{preventivaStats.attention}</div>
                 <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mt-1">A Vencer</div>
               </div>
             </div>
 
             <div className="flex items-start gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100 col-span-2 lg:col-span-1">
-              <div className="w-3 h-3 rounded-full bg-slate-300 mt-1.5 shrink-0"></div>
+              <div className="w-3 h-3 rounded-full bg-red-500 mt-1.5 shrink-0"></div>
               <div>
-                <div className="text-3xl font-black text-slate-400">0</div>
+                <div className="text-3xl font-black text-slate-800">{preventivaStats.critical}</div>
                 <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mt-1">Atrasadas</div>
               </div>
             </div>
@@ -1256,11 +1277,40 @@ function DashboardView() {
           <div className="pt-6 border-t border-slate-100">
             <h3 className="text-xs font-bold text-slate-500 mb-4 uppercase tracking-wider">Atenção Necessária</h3>
             <div className="space-y-3">
-              <div className="flex flex-col items-center justify-center p-8 rounded-xl bg-slate-50 border border-slate-100 border-dashed text-center">
-                <Truck className="w-8 h-8 text-slate-300 mb-3" />
-                <div className="font-extrabold text-slate-500">Nenhum veículo necessitando de atenção</div>
-                <div className="text-xs font-medium text-slate-400 mt-1">Sua frota está em dia com as preventivas.</div>
-              </div>
+              {(() => {
+                const preventivas = JSON.parse(localStorage.getItem('preventivas') || '[]');
+                const needed = preventivas.filter((p: any) => (parseInt(p.intervalo) - (parseInt(p.atual) - parseInt(p.ultima))) <= 50);
+
+                if (needed.length === 0) {
+                  return (
+                    <div className="flex flex-col items-center justify-center p-8 rounded-xl bg-slate-50 border border-slate-100 border-dashed text-center">
+                      <Truck className="w-8 h-8 text-slate-300 mb-3" />
+                      <div className="font-extrabold text-slate-500">Nenhum veículo necessitando de atenção</div>
+                      <div className="text-xs font-medium text-slate-400 mt-1">Sua frota está em dia com as preventivas.</div>
+                    </div>
+                  );
+                }
+
+                return needed.map((p: any) => {
+                  const restante = parseInt(p.intervalo) - (parseInt(p.atual) - parseInt(p.ultima));
+                  const isCritical = restante <= 0;
+                  return (
+                    <div key={p.id} className="flex items-center justify-between p-4 rounded-xl bg-white border border-slate-100 shadow-sm">
+                      <div className="flex items-center gap-4">
+                        <div className={`w-2 h-2 rounded-full ${isCritical ? 'bg-red-500 animate-pulse' : 'bg-amber-400'}`}></div>
+                        <div>
+                          <div className="font-bold text-slate-800 text-sm">{p.veiculo}</div>
+                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">{p.plano}</div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className={`font-black text-sm ${isCritical ? 'text-red-600' : 'text-amber-500'}`}>{restante}h</div>
+                        <div className="text-[9px] font-bold text-slate-400 uppercase">Restante</div>
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
             </div>
           </div>
         </div>
@@ -1308,11 +1358,42 @@ function DashboardView() {
             </div>
 
             {/* Bars container */}
-            <div className="absolute left-[60px] right-4 top-0 bottom-12 flex items-center justify-center px-2">
-              <div className="flex flex-col items-center">
-                <BarChart3 className="w-10 h-10 text-slate-200 mb-3" />
-                <span className="text-sm font-bold text-slate-400">Sem dados de manutenção para exibir</span>
-              </div>
+            <div className={`absolute left-[60px] right-4 top-0 bottom-12 flex ${preventivaStats.onTime + preventivaStats.attention + preventivaStats.critical > 0 ? 'items-end' : 'items-center justify-center'} px-2`}>
+              {preventivaStats.onTime + preventivaStats.attention + preventivaStats.critical > 0 ? (
+                (() => {
+                  const preventivas = JSON.parse(localStorage.getItem('preventivas') || '[]');
+                  return preventivas.map((p: any) => {
+                    const restante = parseInt(p.intervalo) - (parseInt(p.atual) - parseInt(p.ultima));
+                    // Scale for visual: max 9000h
+                    const height = Math.abs(restante) / 9000 * 100;
+                    const isNegative = restante < 0;
+                    const color = restante <= 0 ? 'bg-red-500' : restante <= 50 ? 'bg-amber-400' : 'bg-emerald-500';
+
+                    return (
+                      <div key={p.id} className="flex-1 flex flex-col items-center group relative h-full">
+                        <div className="absolute bottom-[-24px] text-[9px] font-black text-slate-400 truncate w-full text-center px-1 uppercase">{p.veiculo}</div>
+                        <div
+                          className={`w-12 sm:w-16 rounded-t-lg transition-all duration-500 cursor-help ${color} hover:brightness-110 shadow-sm relative`}
+                          style={{
+                            height: `${Math.min(height, 100)}%`,
+                            marginBottom: isNegative ? '-2px' : '0'
+                          }}
+                        >
+                          <div className="opacity-0 group-hover:opacity-100 absolute -top-12 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold whitespace-nowrap z-30 shadow-xl pointer-events-none">
+                            {p.plano}: {restante}h restantes
+                            <div className="absolute bottom-[-4px] left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-800 rotate-45"></div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  });
+                })()
+              ) : (
+                <div className="flex flex-col items-center">
+                  <BarChart3 className="w-10 h-10 text-slate-200 mb-3" />
+                  <span className="text-sm font-bold text-slate-400">Sem dados de manutenção para exibir</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1590,6 +1671,53 @@ function LoginView({ onLogin }: { onLogin: () => void }) {
 function PreventivaView() {
   const currentDate = new Date().toISOString().split('T')[0];
 
+  const [veiculo, setVeiculo] = useState('');
+  const [plano, setPlano] = useState('');
+  const [ultima, setUltima] = useState('');
+  const [atual, setAtual] = useState('');
+  const [intervalo, setIntervalo] = useState('500');
+  const [dataInicio, setDataInicio] = useState(currentDate);
+  const [preventivas, setPreventivas] = useState<any[]>(() => {
+    try { return JSON.parse(localStorage.getItem('preventivas') || '[]'); } catch { return []; }
+  });
+
+  const handleSavePreventiva = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!veiculo || !plano || !atual || !intervalo) {
+      alert('Preencha os campos obrigatórios!');
+      return;
+    }
+
+    const newPreventiva = {
+      id: Date.now(),
+      veiculo,
+      plano,
+      ultima: ultima || '0',
+      atual,
+      intervalo,
+      data: dataInicio
+    };
+
+    try {
+      const existing = JSON.parse(localStorage.getItem('preventivas') || '[]');
+      const updated = [...existing, newPreventiva];
+      localStorage.setItem('preventivas', JSON.stringify(updated));
+      setPreventivas(updated);
+      alert('Plano de preventiva ativado com sucesso!');
+      // Clear form
+      setVeiculo(''); setPlano(''); setUltima(''); setAtual(''); setIntervalo('500');
+    } catch (e) {
+      alert('Erro ao salvar no banco de dados.');
+    }
+  };
+
+  const deletePreventiva = (id: number) => {
+    if (!window.confirm('Excluir este plano de preventiva?')) return;
+    const updated = preventivas.filter(p => p.id !== id);
+    localStorage.setItem('preventivas', JSON.stringify(updated));
+    setPreventivas(updated);
+  };
+
   return (
     <div className="max-w-[850px] mx-auto pb-24">
       <header className="mb-6 pt-2">
@@ -1597,7 +1725,7 @@ function PreventivaView() {
         <p className="text-slate-500 mt-2 font-medium">Programe e acompanhe as manutenções preventivas dos equipamentos.</p>
       </header>
 
-      <form className="bg-white rounded-2xl shadow-[0_2px_12px_rgb(0,0,0,0.03)] border border-slate-200 p-6 sm:p-8" onSubmit={(e) => e.preventDefault()}>
+      <form className="bg-white rounded-2xl shadow-[0_2px_12px_rgb(0,0,0,0.03)] border border-slate-200 p-6 sm:p-8 mb-8" onSubmit={handleSavePreventiva}>
 
         <div className="space-y-8">
           {/* Veículo */}
@@ -1606,7 +1734,11 @@ function PreventivaView() {
               Veículo / Equipamento <span className="text-red-500">*</span>
             </label>
             <div className="relative">
-              <select className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold appearance-none hover:border-slate-300 transition-colors shadow-sm">
+              <select
+                value={veiculo}
+                onChange={(e) => setVeiculo(e.target.value)}
+                className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold appearance-none hover:border-slate-300 transition-colors shadow-sm"
+              >
                 <option value="">Selecione o veículo...</option>
                 {(() => {
                   try {
@@ -1635,6 +1767,8 @@ function PreventivaView() {
                 </div>
                 <input
                   type="text"
+                  value={plano}
+                  onChange={(e) => setPlano(e.target.value)}
                   placeholder="Ex: Preventiva de Motor"
                   className="w-full h-12 pl-11 pr-4 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold placeholder:text-slate-400 placeholder:font-medium hover:border-slate-300 transition-colors shadow-sm"
                 />
@@ -1652,6 +1786,8 @@ function PreventivaView() {
               </label>
               <input
                 type="number"
+                value={ultima}
+                onChange={(e) => setUltima(e.target.value)}
                 placeholder="0"
                 className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-[16px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold hover:border-slate-300 transition-colors shadow-sm"
               />
@@ -1665,6 +1801,8 @@ function PreventivaView() {
               </label>
               <input
                 type="number"
+                value={atual}
+                onChange={(e) => setAtual(e.target.value)}
                 placeholder="0"
                 className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-[16px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold hover:border-slate-300 transition-colors shadow-sm"
               />
@@ -1678,6 +1816,8 @@ function PreventivaView() {
               </label>
               <input
                 type="number"
+                value={intervalo}
+                onChange={(e) => setIntervalo(e.target.value)}
                 placeholder="500"
                 className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-[16px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold hover:border-slate-300 transition-colors shadow-sm"
               />
@@ -1694,7 +1834,8 @@ function PreventivaView() {
               <div className="relative">
                 <input
                   type="date"
-                  defaultValue={currentDate}
+                  value={dataInicio}
+                  onChange={(e) => setDataInicio(e.target.value)}
                   className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold hover:border-slate-300 transition-colors shadow-sm"
                   style={{ colorScheme: 'light' }}
                 />
@@ -1714,7 +1855,6 @@ function PreventivaView() {
             </button>
             <button
               type="submit"
-              onClick={() => alert('Plano de preventiva ativado com sucesso!')}
               className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-green-600 border-2 border-green-600 text-white font-extrabold text-sm uppercase tracking-wide hover:bg-green-700 hover:border-green-700 shadow-md active:scale-[0.98] transition-all flex items-center justify-center gap-2"
             >
               <Save className="w-[18px] h-[18px]" />
@@ -1723,6 +1863,47 @@ function PreventivaView() {
           </div>
         </div>
       </form>
+
+      {/* Listagem de Planos */}
+      <div className="bg-white rounded-2xl shadow-[0_2px_12px_rgb(0,0,0,0.03)] border border-slate-200 overflow-hidden">
+        <div className="p-6 border-b border-slate-200 bg-slate-50/50">
+          <h2 className="text-lg font-extrabold text-slate-800 tracking-wide uppercase">Planos de Preventiva Ativos</h2>
+        </div>
+        <div className="divide-y divide-slate-100">
+          {preventivas.length === 0 && (
+            <div className="p-10 text-center text-slate-500 font-medium tracking-wide text-sm">Nenhum plano cadastrado.</div>
+          )}
+          {preventivas.map(p => {
+            const restante = parseInt(p.intervalo) - (parseInt(p.atual) - parseInt(p.ultima));
+            const colorClass = restante <= 0 ? 'text-red-600' : restante <= 50 ? 'text-amber-500' : 'text-emerald-600';
+            const bgClass = restante <= 0 ? 'bg-red-50' : restante <= 50 ? 'bg-amber-50' : 'bg-emerald-50';
+
+            return (
+              <div key={p.id} className="p-5 sm:px-8 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3">
+                    <span className="font-extrabold text-slate-800">{p.veiculo}</span>
+                    <span className="text-[10px] font-black uppercase bg-slate-100 text-slate-500 px-2 py-0.5 rounded">{p.plano}</span>
+                  </div>
+                  <div className="flex gap-4 mt-2">
+                    <div className="text-[11px] font-bold text-slate-400 uppercase">Acúmulo: <span className="text-slate-600">{parseInt(p.atual) - parseInt(p.ultima)}h</span></div>
+                    <div className="text-[11px] font-bold text-slate-400 uppercase">Intervalo: <span className="text-slate-600">{p.intervalo}h</span></div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-6">
+                  <div className={`px-4 py-2 rounded-xl text-center min-w-[100px] ${bgClass}`}>
+                    <div className={`text-base font-black ${colorClass}`}>{restante}h</div>
+                    <div className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Restante</div>
+                  </div>
+                  <button onClick={() => deletePreventiva(p.id)} className="text-slate-300 hover:text-red-500 p-2 transition-colors">
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
