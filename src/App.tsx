@@ -1477,8 +1477,8 @@ function DashboardView() {
               </div>
             </div>
 
-            {/* Bars container - Back to items-end for standard bar growing */}
-            <div className="absolute left-[60px] right-4 top-0 bottom-24 flex items-end px-2 gap-4">
+            {/* Bars container Overhaul */}
+            <div className="absolute left-[60px] right-4 top-16 bottom-24 flex items-end px-4 gap-12 overflow-x-visible">
               {preventivaStats.onTime + preventivaStats.attention + preventivaStats.critical > 0 ? (
                 (() => {
                   try {
@@ -1488,50 +1488,58 @@ function DashboardView() {
                       const restante = parseInt(p.intervalo) - acumulado;
                       const percentRemaining = Math.max(2, Math.min(100, Math.round((restante / parseInt(p.intervalo)) * 100)));
 
-                      const colorHex = restante <= 0 ? '#ef4444' : restante <= 50 ? '#f59e0b' : '#10b981';
+                      const colorHex = restante <= 0 ? '#ef4444' : restante <= 50 ? '#f59e0b' : '#3b82f6';
+                      const colorShadow = restante <= 0 ? 'rgba(239, 68, 68, 0.3)' : restante <= 50 ? 'rgba(245, 158, 11, 0.3)' : 'rgba(59, 130, 246, 0.3)';
 
                       return (
-                        <div key={p.id} className="flex-1 flex flex-col items-center relative group min-w-[48px] h-full">
-                          {/* Top Spacer to push bar down */}
-                          <div className="flex-1 w-full flex flex-col justify-end">
-                            {/* Actual Bar */}
+                        <div key={p.id} className="flex flex-col items-center relative group w-20 h-full shrink-0">
+                          {/* Top Area: Stats */}
+                          <div className="absolute -top-12 flex flex-col items-center gap-0.5">
+                            <span className="text-[11px] font-black text-slate-700">{percentRemaining}%</span>
+                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full text-white bg-slate-900 shadow-sm`}>
+                              {restante}h
+                            </span>
+                          </div>
+
+                          {/* Bar Track (Background) */}
+                          <div className="flex-1 w-8 bg-slate-100/80 rounded-t-2xl flex flex-col justify-end overflow-hidden border border-slate-200/50 shadow-inner">
+                            {/* Actual Bar - Animated height */}
                             <div
                               style={{
                                 height: `${percentRemaining}%`,
                                 backgroundColor: colorHex,
-                                borderTopLeftRadius: '12px',
-                                borderTopRightRadius: '12px',
-                                width: '100%'
+                                boxShadow: `0 0 20px ${colorShadow}`
                               }}
-                              className="shadow-xl transition-all duration-700 ease-out cursor-pointer relative z-10 hover:brightness-110"
+                              className="w-full transition-all duration-1000 ease-out cursor-pointer relative group-hover:brightness-110 flex flex-col items-center justify-start pt-4"
                             >
-                              {/* Percentage Label */}
-                              <div className="absolute inset-x-0 -top-7 text-center font-black text-[11px] text-slate-600 drop-shadow-sm">
-                                {percentRemaining}%
-                              </div>
+                              {/* Glass Effect Line */}
+                              <div className="w-px h-1/2 bg-white/20 absolute left-1/2 -translate-x-1/2 top-0"></div>
 
-                              {/* Vertical Type Label */}
-                              {percentRemaining > 30 && (
-                                <div className="absolute inset-x-0 top-4 text-center font-black text-[10px] text-white/40 uppercase tracking-tighter rotate-90 origin-center whitespace-nowrap">
+                              {/* Vertical Type Label inside bar */}
+                              {percentRemaining > 35 && (
+                                <div className="text-white/40 text-[9px] font-black uppercase tracking-widest rotate-90 origin-center whitespace-nowrap">
                                   {p.plano}
                                 </div>
                               )}
-
-                              {/* Tooltip */}
-                              <div className="opacity-0 group-hover:opacity-100 absolute -top-16 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-3 py-2 rounded-xl text-[10px] font-bold whitespace-nowrap z-50 shadow-2xl pointer-events-none transition-all border border-slate-700">
-                                <div className="text-slate-400 mb-0.5 uppercase tracking-tighter">{p.veiculo}</div>
-                                <div>{p.plano}: <span className="text-white font-black">{restante}h</span> restantes</div>
-                                <div className="absolute bottom-[-5px] left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-slate-900 rotate-45 border-r border-b border-slate-700"></div>
-                              </div>
                             </div>
                           </div>
 
-                          {/* Diagonal Label - Fixed anchor and rotation */}
-                          <div className="absolute bottom-[-10px] left-1/2 w-0 h-0">
-                            <div className="absolute top-2 left-0 -rotate-45 origin-top-left whitespace-nowrap pl-1">
-                              <div className="text-[11px] font-black text-slate-600 uppercase tracking-tight group-hover:text-blue-600 transition-colors bg-white/80 px-1 rounded">
+                          {/* Tooltip */}
+                          <div className="opacity-0 group-hover:opacity-100 absolute -top-20 left-1/2 -translate-x-1/2 bg-slate-900/95 backdrop-blur-md text-white px-4 py-2.5 rounded-2xl text-[10px] font-bold whitespace-nowrap z-50 shadow-2xl pointer-events-none transition-all border border-white/10 scale-90 group-hover:scale-100">
+                            <div className="text-blue-400 mb-1 uppercase tracking-widest text-[8px] font-black">{p.veiculo}</div>
+                            <div className="flex items-center gap-2">
+                              {p.plano}: <span className="text-white font-black text-xs">{restante}h</span>
+                            </div>
+                            <div className="text-slate-500 font-medium mt-0.5">Acumulado: {acumulado}h</div>
+                            <div className="absolute bottom-[-6px] left-1/2 -translate-x-1/2 w-3 h-3 bg-slate-900/95 rotate-45 border-r border-b border-white/10"></div>
+                          </div>
+
+                          {/* Diagonal Label - Improved alignment */}
+                          <div className="absolute bottom-[-15px] left-1/2 transform -translate-x-1/2">
+                            <div className="flex flex-col items-center -rotate-45 origin-center mt-6">
+                              <span className="text-[10px] font-black text-slate-800 tracking-tighter bg-white shadow-sm border border-slate-100 px-2 py-1 rounded-lg">
                                 {p.veiculo}
-                              </div>
+                              </span>
                             </div>
                           </div>
                         </div>
