@@ -641,11 +641,22 @@ function ChecklistView() {
                 <User className="w-[14px] h-[14px] text-slate-400" />
                 Nome do Responsável <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                placeholder="Ex: Ricardo Luz"
-                className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium placeholder:text-slate-400 hover:border-slate-300 transition-colors shadow-sm"
-              />
+              <div className="relative">
+                <select className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium appearance-none hover:border-slate-300 transition-colors shadow-sm">
+                  <option value="">Selecione o responsável...</option>
+                  {(() => {
+                    try {
+                      const funcionarios = JSON.parse(localStorage.getItem('funcionarios') || '[]');
+                      return funcionarios.map((f: any) => (
+                        <option key={f.id} value={f.nome}>{f.nome} ({f.cargo})</option>
+                      ));
+                    } catch { return null; }
+                  })()}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                  <ChevronDown className="w-4 h-4" />
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -932,6 +943,9 @@ function DatabaseView() {
                     <option value="carreta">Carreta</option>
                     <option value="empilhadeira">Empilhadeira</option>
                     <option value="van">Van / Utilitário</option>
+                    <option value="carro_leve">Veículo Leve / Passeio</option>
+                    <option value="patu">PATU / Triturador</option>
+                    <option value="gerador">Gerador</option>
                   </select>
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
                     <ChevronDown className="w-4 h-4" />
@@ -987,6 +1001,9 @@ function DatabaseView() {
                     <option value="encarregado">Encarregado</option>
                     <option value="assistente_administrativo">Assistente Administrativo</option>
                     <option value="analista_pcm">Analista de PCM</option>
+                    <option value="auxiliar_manutencao">Auxiliar de Manutenção</option>
+                    <option value="coordenador_operacional">Coordenador Operacional</option>
+                    <option value="gerente">Gerente</option>
                   </select>
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
                     <ChevronDown className="w-4 h-4" />
