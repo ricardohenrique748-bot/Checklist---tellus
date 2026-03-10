@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Truck, Calendar, Clock, User, CheckCircle, XCircle, MinusCircle, ChevronUp, ChevronDown, ListChecks, Database, Menu, X, Camera, ImagePlus, Trash2, Users, Key, Save, Droplet, Gauge, ClipboardCheck, BarChart3, Lock, Wrench, Pencil, Sun, Moon, Building2 } from 'lucide-react';
+import { Truck, Calendar, Clock, User, CheckCircle, XCircle, MinusCircle, ChevronUp, ChevronDown, ListChecks, Database, Menu, X, Camera, ImagePlus, Trash2, Users, Key, Save, Droplet, Gauge, ClipboardCheck, BarChart3, Lock, Wrench, Pencil, Sun, Moon, Building2, Share2 } from 'lucide-react';
 import { supabase } from './lib/supabase';
 
 const mechanicallyItems = [
@@ -506,6 +506,7 @@ function ChecklistView() {
   const [headerResponsavel, setHeaderResponsavel] = useState(() => localStorage.getItem('tellus_user_name') || '');
   const [headerData, setHeaderData] = useState(() => new Date().toISOString().split('T')[0]);
   const [headerHora, setHeaderHora] = useState(() => new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
+  const [headerKM, setHeaderKM] = useState('');
 
   const [mecanica, setMecanica] = useState<SectionState>({});
   const [eletrica, setEletrica] = useState<SectionState>({});
@@ -616,6 +617,7 @@ function ChecklistView() {
       responsavel: headerResponsavel,
       data: headerData,
       hora: headerHora,
+      km: headerKM,
       mecanica,
       eletrica,
       externa,
@@ -631,8 +633,9 @@ function ChecklistView() {
       setHistory(newHistory);
 
       // Clear forms
-      setMecanica({}); setEletrica({}); setExterna({}); setLubrificacao({}); setCalibragem({});
       setHeaderPlaca('');
+      setHeaderKM('');
+      setMecanica({}); setEletrica({}); setExterna({}); setLubrificacao({}); setCalibragem({});
 
       alert('Inspeção salva com sucesso!');
       setViewMode('historico');
@@ -643,6 +646,7 @@ function ChecklistView() {
 
   const handleShare = (inspeccao: any) => {
     const text = `*Checklist - Equipamento ${inspeccao.placa}*
+*KM:* ${inspeccao.km || 'Não informado'}
 *Data:* ${inspeccao.data.split('-').reverse().join('/')} às ${inspeccao.hora}
 *Responsável:* ${inspeccao.responsavel}
 
@@ -664,10 +668,9 @@ Faça login no sistema para ver os detalhes completos.`;
 
     // Fill states para o modo de visualização 
     // É apenas para exibir... Mas podemos só usar o rendered do Checklist normal "desativado"
-    setHeaderPlaca(inspeccao.placa);
-    setHeaderResponsavel(inspeccao.responsavel);
     setHeaderData(inspeccao.data);
     setHeaderHora(inspeccao.hora);
+    setHeaderKM(inspeccao.km || '');
     setMecanica(inspeccao.mecanica || {});
     setEletrica(inspeccao.eletrica || {});
     setExterna(inspeccao.externa || {});
@@ -679,10 +682,9 @@ Faça login no sistema para ver os detalhes completos.`;
     setSelectedInspection(null);
     setViewMode('historico');
     // Clear states 
-    setMecanica({}); setEletrica({}); setExterna({}); setLubrificacao({}); setCalibragem({});
-    setHeaderPlaca('');
-    setHeaderData(new Date().toISOString().split('T')[0]);
     setHeaderHora(new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
+    setHeaderKM('');
+    setMecanica({}); setEletrica({}); setExterna({}); setLubrificacao({}); setCalibragem({});
   }
 
   if (viewMode === 'historico') {
@@ -716,6 +718,7 @@ Faça login no sistema para ver os detalhes completos.`;
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm text-slate-500 font-medium">
                       <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {item.data.split('-').reverse().join('/')}</span>
                       <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {item.hora}</span>
+                      {item.km && <span className="flex items-center gap-1"><Gauge className="w-3.5 h-3.5" /> {item.km} KM</span>}
                       <span className="flex items-center gap-1"><User className="w-3.5 h-3.5" /> {item.responsavel}</span>
                     </div>
                   </div>
@@ -851,7 +854,21 @@ Faça login no sistema para ver os detalhes completos.`;
               />
             </div>
 
-            <div className="col-span-1 md:col-span-2">
+            <div>
+              <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                <Gauge className="w-[14px] h-[14px] text-slate-400" />
+                Quilometragem (KM) <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                value={headerKM}
+                onChange={(e) => setHeaderKM(e.target.value)}
+                placeholder="0"
+                className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium hover:border-slate-300 transition-colors shadow-sm"
+              />
+            </div>
+
+            <div className="col-span-1 md:col-span-1">
               <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
                 <User className="w-[14px] h-[14px] text-slate-400" />
                 Nome do Responsável <span className="text-red-500">*</span>
@@ -1040,6 +1057,7 @@ function DatabaseView() {
   const [frotaPlaca, setFrotaPlaca] = useState('');
   const [frotaModelo, setFrotaModelo] = useState('');
   const [frotaTipo, setFrotaTipo] = useState('');
+  const [frotaKM, setFrotaKM] = useState('');
   const [frotaEmpresa, setFrotaEmpresa] = useState('');
 
   const [empresaNome, setEmpresaNome] = useState('');
@@ -1056,7 +1074,7 @@ function DatabaseView() {
   const [editingId, setEditingId] = useState<number | null>(null);
 
   const clearForm = () => {
-    setFrotaPlaca(''); setFrotaModelo(''); setFrotaTipo(''); setFrotaEmpresa('');
+    setFrotaPlaca(''); setFrotaModelo(''); setFrotaTipo(''); setFrotaEmpresa(''); setFrotaKM('');
     setFuncNome(''); setFuncEmail(''); setFuncCargo('');
     setAcessoNome(''); setAcessoEmail(''); setAcessoSenha(''); setAcessoNivel('');
     setEmpresaNome('');
@@ -1069,12 +1087,12 @@ function DatabaseView() {
 
     try {
       if (editingId) {
-        const { data, error } = await supabase.from('frotas').update({ placa: frotaPlaca, modelo: frotaModelo, tipo: frotaTipo, empresa: frotaEmpresa }).eq('id', editingId).select();
+        const { data, error } = await supabase.from('frotas').update({ placa: frotaPlaca, modelo: frotaModelo, tipo: frotaTipo, empresa: frotaEmpresa, km: frotaKM }).eq('id', editingId).select();
         if (error) throw error;
         setFrotas(frotas.map(f => f.id === editingId ? data[0] : f));
         alert('Veículo atualizado com sucesso!');
       } else {
-        const { data, error } = await supabase.from('frotas').insert([{ placa: frotaPlaca, modelo: frotaModelo, tipo: frotaTipo, empresa: frotaEmpresa }]).select();
+        const { data, error } = await supabase.from('frotas').insert([{ placa: frotaPlaca, modelo: frotaModelo, tipo: frotaTipo, empresa: frotaEmpresa, km: frotaKM }]).select();
         if (error) throw error;
         if (data) setFrotas([data[0], ...frotas]);
         alert('Veículo cadastrado com sucesso!');
@@ -1157,6 +1175,7 @@ function DatabaseView() {
     setFrotaPlaca(f.placa);
     setFrotaModelo(f.modelo);
     setFrotaTipo(f.tipo);
+    setFrotaKM(f.km || '');
     setFrotaEmpresa(f.empresa || '');
     window.scrollTo({ top: 0, behavior: 'auto' });
     window.scrollTo(0, 0);
@@ -1326,384 +1345,412 @@ function DatabaseView() {
                     <ChevronDown className="w-4 h-4" />
                   </div>
                 </div>
-              </div>
-              <div className="col-span-1 md:col-span-1">
-                <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
-                  Empresa <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <select value={frotaEmpresa} onChange={e => setFrotaEmpresa(e.target.value)} className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium appearance-none hover:border-slate-300 transition-colors shadow-sm">
-                    <option value="">Selecione a empresa...</option>
-                    {empresas.map(emp => (
-                      <option key={emp.id} value={emp.nome}>{emp.nome}</option>
-                    ))}
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
-                    <ChevronDown className="w-4 h-4" />
+                <div className="col-span-1 md:col-span-1">
+                  <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                    Empresa <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <select value={frotaEmpresa} onChange={e => setFrotaEmpresa(e.target.value)} className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium appearance-none hover:border-slate-300 transition-colors shadow-sm">
+                      <option value="">Selecione a empresa...</option>
+                      {empresas.map(emp => (
+                        <option key={emp.id} value={emp.nome}>{emp.nome}</option>
+                      ))}
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                      <ChevronDown className="w-4 h-4" />
+                    </div>
+                  </div>
+                </div>
+                <div className="col-span-1 md:col-span-2">
+                  <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                    KM Atual
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      value={frotaKM} onChange={e => setFrotaKM(e.target.value)}
+                      placeholder="Ex: 150000"
+                      className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium placeholder:text-slate-400 hover:border-slate-300 transition-colors shadow-sm"
+                    />
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div className="pt-6 flex justify-end gap-3">
-              {editingId && (
+              <div className="pt-6 flex justify-end gap-3">
+                {editingId && (
+                  <button
+                    type="button"
+                    onClick={clearForm}
+                    className="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-6 py-3.5 rounded-xl transition-all text-[14px] uppercase tracking-wide"
+                  >
+                    Cancelar
+                  </button>
+                )}
                 <button
-                  type="button"
-                  onClick={clearForm}
-                  className="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-6 py-3.5 rounded-xl transition-all text-[14px] uppercase tracking-wide"
+                  type="submit"
+                  className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold px-6 py-3.5 rounded-xl shadow-md active:scale-[0.98] transition-all text-[14px] uppercase tracking-wide w-full sm:w-auto"
                 >
-                  Cancelar
+                  <Save className="w-[18px] h-[18px]" />
+                  {editingId ? 'Salvar Alterações' : 'Salvar Veículo'}
                 </button>
-              )}
-              <button
-                type="submit"
-                className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold px-6 py-3.5 rounded-xl shadow-md active:scale-[0.98] transition-all text-[14px] uppercase tracking-wide w-full sm:w-auto"
-              >
-                <Save className="w-[18px] h-[18px]" />
-                {editingId ? 'Salvar Alterações' : 'Salvar Veículo'}
-              </button>
-            </div>
+              </div>
           </form>
-        )}
+        )
+        }
 
         {/* Formulário de Empresas */}
-        {activeForm === 'empresas' && (
-          <form className="space-y-6" onSubmit={handleSaveEmpresa}>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
-                <Building2 className="w-5 h-5 text-blue-600" />
+        {
+          activeForm === 'empresas' && (
+            <form className="space-y-6" onSubmit={handleSaveEmpresa}>
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
+                  <Building2 className="w-5 h-5 text-blue-600" />
+                </div>
+                <h2 className="text-lg font-extrabold text-slate-800 tracking-wide uppercase">
+                  {editingId ? 'Editar Empresa' : 'Cadastro de Empresa'}
+                </h2>
               </div>
-              <h2 className="text-lg font-extrabold text-slate-800 tracking-wide uppercase">
-                {editingId ? 'Editar Empresa' : 'Cadastro de Empresa'}
-              </h2>
-            </div>
 
-            {editingId && (
-              <div className="mb-6 p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-center gap-2 text-blue-700 text-xs font-bold uppercase tracking-wider">
-                <Pencil className="w-3.5 h-3.5" />
-                Modo de Edição Ativo
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 gap-x-6 gap-y-7">
-              <div>
-                <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
-                  Nome da Empresa <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={empresaNome} onChange={e => setEmpresaNome(e.target.value)}
-                  placeholder="Ex: Dellus Transportes"
-                  className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium placeholder:text-slate-400 hover:border-slate-300 transition-colors shadow-sm"
-                />
-              </div>
-            </div>
-
-            <div className="pt-6 flex justify-end gap-3">
               {editingId && (
-                <button
-                  type="button"
-                  onClick={clearForm}
-                  className="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-6 py-3.5 rounded-xl transition-all text-[14px] uppercase tracking-wide"
-                >
-                  Cancelar
-                </button>
+                <div className="mb-6 p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-center gap-2 text-blue-700 text-xs font-bold uppercase tracking-wider">
+                  <Pencil className="w-3.5 h-3.5" />
+                  Modo de Edição Ativo
+                </div>
               )}
-              <button
-                type="submit"
-                className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold px-6 py-3.5 rounded-xl shadow-md active:scale-[0.98] transition-all text-[14px] uppercase tracking-wide w-full sm:w-auto"
-              >
-                <Save className="w-[18px] h-[18px]" />
-                {editingId ? 'Salvar Alterações' : 'Salvar Empresa'}
-              </button>
-            </div>
-          </form>
-        )}
+
+              <div className="grid grid-cols-1 gap-x-6 gap-y-7">
+                <div>
+                  <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                    Nome da Empresa <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={empresaNome} onChange={e => setEmpresaNome(e.target.value)}
+                    placeholder="Ex: Dellus Transportes"
+                    className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium placeholder:text-slate-400 hover:border-slate-300 transition-colors shadow-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-6 flex justify-end gap-3">
+                {editingId && (
+                  <button
+                    type="button"
+                    onClick={clearForm}
+                    className="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-6 py-3.5 rounded-xl transition-all text-[14px] uppercase tracking-wide"
+                  >
+                    Cancelar
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold px-6 py-3.5 rounded-xl shadow-md active:scale-[0.98] transition-all text-[14px] uppercase tracking-wide w-full sm:w-auto"
+                >
+                  <Save className="w-[18px] h-[18px]" />
+                  {editingId ? 'Salvar Alterações' : 'Salvar Empresa'}
+                </button>
+              </div>
+            </form>
+          )
+        }
 
         {/* Formulário de Funcionários */}
-        {activeForm === 'funcionarios' && (
-          <form className="space-y-6" onSubmit={handleSaveFuncionario}>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center">
-                <Users className="w-5 h-5 text-green-600" />
+        {
+          activeForm === 'funcionarios' && (
+            <form className="space-y-6" onSubmit={handleSaveFuncionario}>
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center">
+                  <Users className="w-5 h-5 text-green-600" />
+                </div>
+                <h2 className="text-lg font-extrabold text-slate-800 tracking-wide uppercase">
+                  {editingId ? 'Editar Funcionário' : 'Cadastro de Funcionário'}
+                </h2>
               </div>
-              <h2 className="text-lg font-extrabold text-slate-800 tracking-wide uppercase">
-                {editingId ? 'Editar Funcionário' : 'Cadastro de Funcionário'}
-              </h2>
-            </div>
 
-            {editingId && (
-              <div className="mb-6 p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-center gap-2 text-blue-700 text-xs font-bold uppercase tracking-wider">
-                <Pencil className="w-3.5 h-3.5" />
-                Modo de Edição Ativo
-              </div>
-            )}
+              {editingId && (
+                <div className="mb-6 p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-center gap-2 text-blue-700 text-xs font-bold uppercase tracking-wider">
+                  <Pencil className="w-3.5 h-3.5" />
+                  Modo de Edição Ativo
+                </div>
+              )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-7">
-              <div className="col-span-1 md:col-span-2">
-                <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
-                  Nome Completo <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={funcNome} onChange={e => setFuncNome(e.target.value)}
-                  placeholder="Ex: João da Silva"
-                  className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium placeholder:text-slate-400 hover:border-slate-300 transition-colors shadow-sm"
-                />
-              </div>
-              <div className="col-span-1 md:col-span-2">
-                <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
-                  E-mail do Funcionário
-                </label>
-                <input
-                  type="email"
-                  value={funcEmail} onChange={e => setFuncEmail(e.target.value)}
-                  placeholder="Ex: joao@empresa.com"
-                  className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium placeholder:text-slate-400 hover:border-slate-300 transition-colors shadow-sm"
-                />
-              </div>
-              <div className="col-span-1 md:col-span-2">
-                <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
-                  Cargo / Função <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <select value={funcCargo} onChange={e => setFuncCargo(e.target.value)} className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium appearance-none hover:border-slate-300 transition-colors shadow-sm">
-                    <option value="">Selecione...</option>
-                    <option value="motorista">Motorista</option>
-                    <option value="mecanico">Mecânico</option>
-                    <option value="eletricista">Eletricista</option>
-                    <option value="encarregado">Encarregado</option>
-                    <option value="assistente_administrativo">Assistente Administrativo</option>
-                    <option value="analista_pcm">Analista de PCM</option>
-                    <option value="auxiliar_manutencao">Auxiliar de Manutenção</option>
-                    <option value="coordenador_operacional">Coordenador Operacional</option>
-                    <option value="gerente">Gerente</option>
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
-                    <ChevronDown className="w-4 h-4" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-7">
+                <div className="col-span-1 md:col-span-2">
+                  <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                    Nome Completo <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={funcNome} onChange={e => setFuncNome(e.target.value)}
+                    placeholder="Ex: João da Silva"
+                    className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium placeholder:text-slate-400 hover:border-slate-300 transition-colors shadow-sm"
+                  />
+                </div>
+                <div className="col-span-1 md:col-span-2">
+                  <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                    E-mail do Funcionário
+                  </label>
+                  <input
+                    type="email"
+                    value={funcEmail} onChange={e => setFuncEmail(e.target.value)}
+                    placeholder="Ex: joao@empresa.com"
+                    className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium placeholder:text-slate-400 hover:border-slate-300 transition-colors shadow-sm"
+                  />
+                </div>
+                <div className="col-span-1 md:col-span-2">
+                  <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                    Cargo / Função <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <select value={funcCargo} onChange={e => setFuncCargo(e.target.value)} className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium appearance-none hover:border-slate-300 transition-colors shadow-sm">
+                      <option value="">Selecione...</option>
+                      <option value="motorista">Motorista</option>
+                      <option value="mecanico">Mecânico</option>
+                      <option value="eletricista">Eletricista</option>
+                      <option value="encarregado">Encarregado</option>
+                      <option value="assistente_administrativo">Assistente Administrativo</option>
+                      <option value="analista_pcm">Analista de PCM</option>
+                      <option value="auxiliar_manutencao">Auxiliar de Manutenção</option>
+                      <option value="coordenador_operacional">Coordenador Operacional</option>
+                      <option value="gerente">Gerente</option>
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                      <ChevronDown className="w-4 h-4" />
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div className="pt-6 flex justify-end gap-3">
-              {editingId && (
+              <div className="pt-6 flex justify-end gap-3">
+                {editingId && (
+                  <button
+                    type="button"
+                    onClick={clearForm}
+                    className="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-6 py-3.5 rounded-xl transition-all text-[14px] uppercase tracking-wide"
+                  >
+                    Cancelar
+                  </button>
+                )}
                 <button
-                  type="button"
-                  onClick={clearForm}
-                  className="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-6 py-3.5 rounded-xl transition-all text-[14px] uppercase tracking-wide"
+                  type="submit"
+                  className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-extrabold px-6 py-3.5 rounded-xl shadow-md active:scale-[0.98] transition-all text-[14px] uppercase tracking-wide w-full sm:w-auto"
                 >
-                  Cancelar
+                  <Save className="w-[18px] h-[18px]" />
+                  {editingId ? 'Salvar Alterações' : 'Salvar Funcionário'}
                 </button>
-              )}
-              <button
-                type="submit"
-                className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-extrabold px-6 py-3.5 rounded-xl shadow-md active:scale-[0.98] transition-all text-[14px] uppercase tracking-wide w-full sm:w-auto"
-              >
-                <Save className="w-[18px] h-[18px]" />
-                {editingId ? 'Salvar Alterações' : 'Salvar Funcionário'}
-              </button>
-            </div>
-          </form>
-        )}
+              </div>
+            </form>
+          )
+        }
 
         {/* Formulário de Acessos */}
-        {activeForm === 'logins' && (
-          <form className="space-y-6" onSubmit={handleSaveAcesso}>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center">
-                <Key className="w-5 h-5 text-purple-600" />
+        {
+          activeForm === 'logins' && (
+            <form className="space-y-6" onSubmit={handleSaveAcesso}>
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center">
+                  <Key className="w-5 h-5 text-purple-600" />
+                </div>
+                <h2 className="text-lg font-extrabold text-slate-800 tracking-wide uppercase">
+                  {editingId ? 'Editar Acesso' : 'Cadastro de Acesso'}
+                </h2>
               </div>
-              <h2 className="text-lg font-extrabold text-slate-800 tracking-wide uppercase">
-                {editingId ? 'Editar Acesso' : 'Cadastro de Acesso'}
-              </h2>
-            </div>
 
-            {editingId && (
-              <div className="mb-6 p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-center gap-2 text-blue-700 text-xs font-bold uppercase tracking-wider">
-                <Pencil className="w-3.5 h-3.5" />
-                Modo de Edição Ativo
-              </div>
-            )}
+              {editingId && (
+                <div className="mb-6 p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-center gap-2 text-blue-700 text-xs font-bold uppercase tracking-wider">
+                  <Pencil className="w-3.5 h-3.5" />
+                  Modo de Edição Ativo
+                </div>
+              )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-7">
-              <div className="col-span-1 md:col-span-2">
-                <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
-                  Nome do Usuário <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={acessoNome} onChange={e => setAcessoNome(e.target.value)}
-                  placeholder="Ex: Administrativo Dellus"
-                  className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium placeholder:text-slate-400 hover:border-slate-300 transition-colors shadow-sm"
-                />
-              </div>
-              <div className="col-span-1 md:col-span-2">
-                <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
-                  E-mail de Acesso <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="email"
-                  value={acessoEmail} onChange={e => setAcessoEmail(e.target.value)}
-                  placeholder="Ex: usuario@empresa.com"
-                  className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium placeholder:text-slate-400 hover:border-slate-300 transition-colors shadow-sm"
-                />
-              </div>
-              <div>
-                <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
-                  Senha <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="password"
-                  value={acessoSenha} onChange={e => setAcessoSenha(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium placeholder:text-slate-400 hover:border-slate-300 transition-colors shadow-sm"
-                />
-              </div>
-              <div>
-                <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
-                  Nível de Acesso <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <select value={acessoNivel} onChange={e => setAcessoNivel(e.target.value)} className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium appearance-none hover:border-slate-300 transition-colors shadow-sm">
-                    <option value="">Selecione...</option>
-                    <option value="admin">Administrador (Acesso Total)</option>
-                    <option value="operador">Operador (Apenas Checklists)</option>
-                    <option value="gestor">Gestor (Relatórios e Aprovações)</option>
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
-                    <ChevronDown className="w-4 h-4" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-7">
+                <div className="col-span-1 md:col-span-2">
+                  <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                    Nome do Usuário <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={acessoNome} onChange={e => setAcessoNome(e.target.value)}
+                    placeholder="Ex: Administrativo Dellus"
+                    className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium placeholder:text-slate-400 hover:border-slate-300 transition-colors shadow-sm"
+                  />
+                </div>
+                <div className="col-span-1 md:col-span-2">
+                  <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                    E-mail de Acesso <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={acessoEmail} onChange={e => setAcessoEmail(e.target.value)}
+                    placeholder="Ex: usuario@empresa.com"
+                    className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium placeholder:text-slate-400 hover:border-slate-300 transition-colors shadow-sm"
+                  />
+                </div>
+                <div>
+                  <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                    Senha <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="password"
+                    value={acessoSenha} onChange={e => setAcessoSenha(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium placeholder:text-slate-400 hover:border-slate-300 transition-colors shadow-sm"
+                  />
+                </div>
+                <div>
+                  <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                    Nível de Acesso <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <select value={acessoNivel} onChange={e => setAcessoNivel(e.target.value)} className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium appearance-none hover:border-slate-300 transition-colors shadow-sm">
+                      <option value="">Selecione...</option>
+                      <option value="admin">Administrador (Acesso Total)</option>
+                      <option value="operador">Operador (Apenas Checklists)</option>
+                      <option value="gestor">Gestor (Relatórios e Aprovações)</option>
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                      <ChevronDown className="w-4 h-4" />
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div className="pt-6 flex justify-end gap-3">
-              {editingId && (
+              <div className="pt-6 flex justify-end gap-3">
+                {editingId && (
+                  <button
+                    type="button"
+                    onClick={clearForm}
+                    className="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-6 py-3.5 rounded-xl transition-all text-[14px] uppercase tracking-wide"
+                  >
+                    Cancelar
+                  </button>
+                )}
                 <button
-                  type="button"
-                  onClick={clearForm}
-                  className="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-6 py-3.5 rounded-xl transition-all text-[14px] uppercase tracking-wide"
+                  type="submit"
+                  className="flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-extrabold px-6 py-3.5 rounded-xl shadow-md active:scale-[0.98] transition-all text-[14px] uppercase tracking-wide w-full sm:w-auto"
                 >
-                  Cancelar
+                  <Save className="w-[18px] h-[18px]" />
+                  {editingId ? 'Salvar Alterações' : 'Salvar Acesso'}
                 </button>
-              )}
-              <button
-                type="submit"
-                className="flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-extrabold px-6 py-3.5 rounded-xl shadow-md active:scale-[0.98] transition-all text-[14px] uppercase tracking-wide w-full sm:w-auto"
-              >
-                <Save className="w-[18px] h-[18px]" />
-                {editingId ? 'Salvar Alterações' : 'Salvar Acesso'}
-              </button>
-            </div>
-          </form>
-        )}
-      </div>
+              </div>
+            </form>
+          )
+        }
+      </div >
 
       {/* Listagem de Cadastrados */}
-      <div className="bg-white rounded-2xl shadow-[0_2px_12px_rgb(0,0,0,0.03)] border border-slate-200 overflow-hidden">
+      < div className="bg-white rounded-2xl shadow-[0_2px_12px_rgb(0,0,0,0.03)] border border-slate-200 overflow-hidden" >
         <div className="p-6 border-b border-slate-200 bg-slate-50/50">
           <h2 className="text-lg font-extrabold text-slate-800 tracking-wide uppercase">Cadastros Realizados</h2>
         </div>
 
-        {activeForm === 'frotas' && (
-          <div className="divide-y divide-slate-100">
-            {frotas.length === 0 && <div className="p-6 text-center text-slate-500 font-medium tracking-wide text-sm">Nenhum veículo cadastrado.</div>}
-            {frotas.map(f => (
-              <div key={f.id} className="p-4 sm:px-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                <div>
-                  <div className="font-bold text-slate-800">{f.placa} <span className="text-slate-400 font-medium">({f.modelo})</span></div>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[10px] font-bold px-2 py-0.5 bg-blue-50 text-blue-600 rounded uppercase">{f.tipo}</span>
-                    {f.empresa && <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-100 text-slate-600 rounded uppercase">{f.empresa}</span>}
+        {
+          activeForm === 'frotas' && (
+            <div className="divide-y divide-slate-100">
+              {frotas.length === 0 && <div className="p-6 text-center text-slate-500 font-medium tracking-wide text-sm">Nenhum veículo cadastrado.</div>}
+              {frotas.map(f => (
+                <div key={f.id} className="p-4 sm:px-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                  <div>
+                    <div className="font-bold text-slate-800">{f.placa} <span className="text-slate-400 font-medium">({f.modelo})</span></div>
+                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                      <span className="text-[10px] font-bold px-2 py-0.5 bg-blue-50 text-blue-600 rounded uppercase">{f.tipo}</span>
+                      {f.empresa && <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-100 text-slate-600 rounded uppercase">{f.empresa}</span>}
+                      {f.km && <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded uppercase flex items-center gap-1"><Gauge className="w-3 h-3" /> {f.km} KM</span>}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => startEditFrota(f)} className="text-slate-400 hover:text-blue-500 p-2 transition-colors">
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => deleteItem('frotas', f.id)} className="text-slate-400 hover:text-red-500 p-2 transition-colors">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <button onClick={() => startEditFrota(f)} className="text-slate-400 hover:text-blue-500 p-2 transition-colors">
-                    <Pencil className="w-4 h-4" />
-                  </button>
-                  <button onClick={() => deleteItem('frotas', f.id)} className="text-slate-400 hover:text-red-500 p-2 transition-colors">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )
+        }
 
-        {activeForm === 'empresas' && (
-          <div className="divide-y divide-slate-100">
-            {empresas.length === 0 && <div className="p-6 text-center text-slate-500 font-medium tracking-wide text-sm">Nenhuma empresa cadastrada.</div>}
-            {empresas.map(f => (
-              <div key={f.id} className="p-4 sm:px-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                <div>
-                  <div className="font-bold text-slate-800 uppercase">{f.nome}</div>
-                  <div className="text-[10px] text-slate-400 font-medium">Cadastrada em {new Date(f.created_at).toLocaleDateString()}</div>
+        {
+          activeForm === 'empresas' && (
+            <div className="divide-y divide-slate-100">
+              {empresas.length === 0 && <div className="p-6 text-center text-slate-500 font-medium tracking-wide text-sm">Nenhuma empresa cadastrada.</div>}
+              {empresas.map(f => (
+                <div key={f.id} className="p-4 sm:px-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                  <div>
+                    <div className="font-bold text-slate-800 uppercase">{f.nome}</div>
+                    <div className="text-[10px] text-slate-400 font-medium">Cadastrada em {new Date(f.created_at).toLocaleDateString()}</div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => startEditEmpresa(f)} className="text-slate-400 hover:text-blue-500 p-2 transition-colors">
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => deleteItem('empresas', f.id)} className="text-slate-400 hover:text-red-500 p-2 transition-colors">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <button onClick={() => startEditEmpresa(f)} className="text-slate-400 hover:text-blue-500 p-2 transition-colors">
-                    <Pencil className="w-4 h-4" />
-                  </button>
-                  <button onClick={() => deleteItem('empresas', f.id)} className="text-slate-400 hover:text-red-500 p-2 transition-colors">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )
+        }
 
-        {activeForm === 'funcionarios' && (
-          <div className="divide-y divide-slate-100">
-            {funcionarios.length === 0 && <div className="p-6 text-center text-slate-500 font-medium tracking-wide text-sm">Nenhum funcionário cadastrado.</div>}
-            {funcionarios.map(f => (
-              <div key={f.id} className="p-4 sm:px-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                <div>
-                  <div className="font-bold text-slate-800">{f.nome}</div>
-                  <div className="text-xs font-bold text-green-500 uppercase mt-1">{f.cargo}</div>
+        {
+          activeForm === 'funcionarios' && (
+            <div className="divide-y divide-slate-100">
+              {funcionarios.length === 0 && <div className="p-6 text-center text-slate-500 font-medium tracking-wide text-sm">Nenhum funcionário cadastrado.</div>}
+              {funcionarios.map(f => (
+                <div key={f.id} className="p-4 sm:px-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                  <div>
+                    <div className="font-bold text-slate-800">{f.nome}</div>
+                    <div className="text-xs font-bold text-green-500 uppercase mt-1">{f.cargo}</div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => startEditFuncionario(f)} className="text-slate-400 hover:text-blue-500 p-2 transition-colors">
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => deleteItem('funcionarios', f.id)} className="text-slate-400 hover:text-red-500 p-2 transition-colors">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <button onClick={() => startEditFuncionario(f)} className="text-slate-400 hover:text-blue-500 p-2 transition-colors">
-                    <Pencil className="w-4 h-4" />
-                  </button>
-                  <button onClick={() => deleteItem('funcionarios', f.id)} className="text-slate-400 hover:text-red-500 p-2 transition-colors">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )
+        }
 
-        {activeForm === 'logins' && (
-          <div className="divide-y divide-slate-100">
-            {acessos.length === 0 && <div className="p-6 text-center text-slate-500 font-medium tracking-wide text-sm">Nenhum acesso cadastrado.</div>}
-            {acessos.map(f => (
-              <div key={f.id} className="p-4 sm:px-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                <div>
-                  <div className="font-bold text-slate-800">{f.nome || f.email}</div>
-                  <div className="text-xs font-medium text-slate-400">{f.email}</div>
-                  <div className="text-[10px] font-bold text-purple-500 uppercase mt-1">{f.nivel}</div>
+        {
+          activeForm === 'logins' && (
+            <div className="divide-y divide-slate-100">
+              {acessos.length === 0 && <div className="p-6 text-center text-slate-500 font-medium tracking-wide text-sm">Nenhum acesso cadastrado.</div>}
+              {acessos.map(f => (
+                <div key={f.id} className="p-4 sm:px-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                  <div>
+                    <div className="font-bold text-slate-800">{f.nome || f.email}</div>
+                    <div className="text-xs font-medium text-slate-400">{f.email}</div>
+                    <div className="text-[10px] font-bold text-purple-500 uppercase mt-1">{f.nivel}</div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => startEditAcesso(f)} className="text-slate-400 hover:text-blue-500 p-2 transition-colors">
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => deleteItem('acessos', f.id)} className="text-slate-400 hover:text-red-500 p-2 transition-colors">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <button onClick={() => startEditAcesso(f)} className="text-slate-400 hover:text-blue-500 p-2 transition-colors">
-                    <Pencil className="w-4 h-4" />
-                  </button>
-                  <button onClick={() => deleteItem('acessos', f.id)} className="text-slate-400 hover:text-red-500 p-2 transition-colors">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )
+        }
+      </div >
 
-    </div>
+    </div >
   );
 }
 
-function DashboardView() {
+function DashboardView({ isPublic = false }: { isPublic?: boolean }) {
   const [stats, setStats] = useState({ inspections: 0, nonConformities: 0, activeFrotas: 0 });
   const [preventivaStats, setPreventivaStats] = useState({ onTime: 0, attention: 0, critical: 0 });
   const [preventivasData, setPreventivasData] = useState<any[]>([]);
@@ -1830,16 +1877,32 @@ function DashboardView() {
             <h1 className="text-[28px] font-extrabold tracking-tight text-slate-800">Dashboard</h1>
             <p className="text-slate-500 mt-2 font-medium">Visão geral do desempenho e status das frotas.</p>
           </div>
-          {loading && (
-            <div className="text-blue-500 flex items-center gap-2 mb-2 text-sm font-bold">
-              <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Atualizando...
-            </div>
-          )}
-        </div>
+          <div className="flex items-center gap-3">
+            {!isPublic && (
+              <button
+                onClick={() => {
+                  const url = new URL(window.location.href);
+                  url.searchParams.set('view', 'dashboard');
+                  url.searchParams.set('share', 'true');
+                  navigator.clipboard.writeText(url.toString());
+                  alert('Link do Dashboard copiado para a área de transferência!');
+                }}
+                className="flex items-center gap-2 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold px-4 py-2 rounded-xl transition-all shadow-sm mb-1"
+              >
+                <Share2 className="w-4 h-4" />
+                Compartilhar
+              </button>
+            )}
+            {loading && (
+              <div className="text-blue-500 flex items-center gap-2 mb-2 text-sm font-bold">
+                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Atualizando...
+              </div>
+            )}
+          </div>
       </header>
 
       {/* Filtros */}
@@ -2474,6 +2537,11 @@ function PreventivaView() {
   const [atualImplemento, setAtualImplemento] = useState('');
   const [intervaloImplemento, setIntervaloImplemento] = useState('500');
 
+  // KM
+  const [ultimaKM, setUltimaKM] = useState('');
+  const [atualKM, setAtualKM] = useState('');
+  const [intervaloKM, setIntervaloKM] = useState('10000');
+
   const [dataInicio, setDataInicio] = useState(currentDate);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [preventivas, setPreventivas] = useState<any[]>([]);
@@ -2499,6 +2567,9 @@ function PreventivaView() {
     setUltimaImplemento('');
     setAtualImplemento('');
     setIntervaloImplemento('500');
+    setUltimaKM('');
+    setAtualKM('');
+    setIntervaloKM('10000');
     setDataInicio(currentDate);
     setEditingId(null);
   };
@@ -2515,11 +2586,14 @@ function PreventivaView() {
         veiculo,
         plano,
         ultima: ultima || '0',
-        atual,
-        intervalo,
+        atual: atual || '0',
+        intervalo: intervalo || '0',
         ultima_implemento: ultimaImplemento || '0',
         atual_implemento: atualImplemento || '0',
         intervalo_implemento: intervaloImplemento || '0',
+        ultima_km: ultimaKM || '0',
+        km: atualKM || '0',
+        intervalo_km: intervaloKM || '0',
         data: dataInicio
       };
 
@@ -2554,6 +2628,9 @@ function PreventivaView() {
     setUltimaImplemento(p.ultima_implemento || '');
     setAtualImplemento(p.atual_implemento || '');
     setIntervaloImplemento(p.intervalo_implemento || '');
+    setUltimaKM(p.ultima_km || '');
+    setAtualKM(p.km || '');
+    setIntervaloKM(p.intervalo_km || '');
     setDataInicio(p.data || currentDate);
     window.scrollTo({ top: 0, behavior: 'auto' });
     window.scrollTo(0, 0);
@@ -2707,6 +2784,55 @@ function PreventivaView() {
           <div className="h-px bg-slate-100 my-2"></div>
 
           <div>
+            <h3 className="text-[13px] font-black text-slate-800 uppercase tracking-widest mb-4">Dados de Quilometragem (KM)</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Última KM */}
+              <div>
+                <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                  Última Revisão (KM)
+                </label>
+                <input
+                  type="number"
+                  value={ultimaKM}
+                  onChange={(e) => setUltimaKM(e.target.value)}
+                  placeholder="0"
+                  className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-[16px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold hover:border-slate-300 transition-colors shadow-sm"
+                />
+              </div>
+
+              {/* Atual KM */}
+              <div>
+                <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                  Atual (KM)
+                </label>
+                <input
+                  type="number"
+                  value={atualKM}
+                  onChange={(e) => setAtualKM(e.target.value)}
+                  placeholder="0"
+                  className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-[16px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold hover:border-slate-300 transition-colors shadow-sm"
+                />
+              </div>
+
+              {/* Intervalo KM */}
+              <div>
+                <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                  Intervalo (KM)
+                </label>
+                <input
+                  type="number"
+                  value={intervaloKM}
+                  onChange={(e) => setIntervaloKM(e.target.value)}
+                  placeholder="10000"
+                  className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-[16px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold hover:border-slate-300 transition-colors shadow-sm"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="h-px bg-slate-100 my-2"></div>
+
+          <div>
             <h3 className="text-[13px] font-black text-slate-800 uppercase tracking-widest mb-4">Dados do Implemento</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Última Revisão Implemento */}
@@ -2821,6 +2947,9 @@ function PreventivaView() {
                   <div className="flex gap-4 mt-2">
                     <div className="text-[11px] font-bold text-slate-400 uppercase">Acúmulo: <span className="text-slate-600">{parseInt(p.atual) - parseInt(p.ultima)}h</span></div>
                     <div className="text-[11px] font-bold text-slate-400 uppercase">Intervalo: <span className="text-slate-600">{p.intervalo}h</span></div>
+                    {p.km && (
+                      <div className="text-[11px] font-bold text-slate-400 uppercase">Acúmulo KM: <span className="text-slate-600">{parseInt(p.km) - parseInt(p.ultima_km)} KM</span></div>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-4">
@@ -2849,7 +2978,13 @@ function PreventivaView() {
 type Tab = 'dashboard' | 'checklist' | 'preventiva' | 'database';
 
 export default function App() {
+  const [isPublicView] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('view') === 'dashboard' && params.get('share') === 'true';
+  });
+
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    if (isPublicView) return true;
     return localStorage.getItem('tellus_auth') === 'true';
   });
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
@@ -2858,6 +2993,12 @@ export default function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     return (localStorage.getItem('tellus_theme') as 'light' | 'dark') || 'light';
   });
+
+  useEffect(() => {
+    if (isPublicView) {
+      setActiveTab('dashboard');
+    }
+  }, [isPublicView]);
 
   useEffect(() => {
     localStorage.setItem('tellus_auth', isAuthenticated.toString());
@@ -2871,6 +3012,16 @@ export default function App() {
       document.documentElement.classList.remove('dark');
     }
   }, [theme]);
+
+  if (isPublicView) {
+    return (
+      <div className="min-h-screen font-sans bg-[#f4f7f9] p-4 sm:p-8">
+        <div className="max-w-[1000px] mx-auto">
+          <DashboardView isPublic={true} />
+        </div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return <LoginView onLogin={() => setIsAuthenticated(true)} />;
