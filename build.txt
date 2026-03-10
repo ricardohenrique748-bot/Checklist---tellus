@@ -1,0 +1,5 @@
+﻿
+> checklist-dellus@0.0.0 build
+> tsc -b && vite build
+
+src/App.tsx(2,121): error TS6133: 'Settings' is declared but its value is never read.

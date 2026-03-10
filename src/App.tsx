@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Truck, Calendar, Clock, User, CheckCircle, XCircle, MinusCircle, ChevronUp, ChevronDown, ListChecks, Database, Settings, Menu, X, Camera, ImagePlus, Trash2, Users, Key, Save, Droplet, Gauge, ClipboardCheck, BarChart3, Lock, Wrench } from 'lucide-react';
+import { Truck, Calendar, Clock, User, CheckCircle, XCircle, MinusCircle, ChevronUp, ChevronDown, ListChecks, Database, Menu, X, Camera, ImagePlus, Trash2, Users, Key, Save, Droplet, Gauge, ClipboardCheck, BarChart3, Lock, Wrench } from 'lucide-react';
 
 const mechanicallyItems = [
   'Motor', 'Sistema de arrefecimento', 'Óleo do motor', 'Filtros',
