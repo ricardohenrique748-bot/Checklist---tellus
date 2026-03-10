@@ -457,14 +457,48 @@ function SignatureField({ label }: { label: string }) {
 
 function ChecklistView() {
   const [viewMode, setViewMode] = useState<'nova' | 'historico' | 'visualizar'>('nova');
-  const [history, setHistory] = useState<any[]>(() => {
-    try {
-      return JSON.parse(localStorage.getItem('inspecoes_history') || '[]');
-    } catch {
-      return [];
+  const [history, setHistory] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function loadInspecoes() {
+      const { data } = await supabase.from('inspecoes').select('*').order('created_at', { ascending: false });
+      if (data) setHistory(data);
     }
-  });
+    if (viewMode === 'historico') {
+      loadInspecoes();
+    }
+  }, [viewMode]);
+
   const [, setSelectedInspection] = useState<any>(null);
+
+  const [frotasLocal, setFrotasLocal] = useState<any[]>([]);
+  const [funcionariosLocal, setFuncionariosLocal] = useState<any[]>([]);
+  const [acessosLocal, setAcessosLocal] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function loadInspecoes() {
+      const { data } = await supabase.from('inspecoes').select('*').order('created_at', { ascending: false });
+      if (data) setHistory(data);
+    }
+
+    async function loadOptions() {
+      const { data: df } = await supabase.from('frotas').select('placa, modelo').order('placa', { ascending: true });
+      if (df) setFrotasLocal(df);
+
+      const { data: dfunc } = await supabase.from('funcionarios').select('nome').order('nome', { ascending: true });
+      if (dfunc) setFuncionariosLocal(dfunc);
+
+      const { data: dac } = await supabase.from('acessos').select('nome, email').order('nome', { ascending: true });
+      if (dac) setAcessosLocal(dac);
+    }
+
+    loadOptions();
+
+    // Check query params if we want to open a new inspection directly or wait
+    if (viewMode === 'historico') {
+      loadInspecoes();
+    }
+  }, [viewMode]);
 
   const [inspectionTab, setInspectionTab] = useState<'checklist' | 'lubrificacao' | 'calibragem'>('checklist');
 
@@ -571,32 +605,40 @@ function ChecklistView() {
     Object.values(lubrificacao).filter(i => i.status !== null).length +
     Object.values(calibragem).filter(i => i.status !== null).length;
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!headerPlaca || !headerResponsavel) {
       alert('Por favor, identifique o veículo e o responsável!');
       return;
     }
 
     const inspectionData = {
-      id: Date.now(),
       placa: headerPlaca,
       responsavel: headerResponsavel,
       data: headerData,
       hora: headerHora,
-      mecanica, eletrica, externa, lubrificacao, calibragem,
-      timestamp: new Date().toISOString()
+      mecanica,
+      eletrica,
+      externa,
+      lubrificacao,
+      calibragem
     };
 
-    const newHistory = [inspectionData, ...history];
-    setHistory(newHistory);
-    localStorage.setItem('inspecoes_history', JSON.stringify(newHistory));
+    try {
+      const { data, error } = await supabase.from('inspecoes').insert([inspectionData]).select();
+      if (error) throw error;
 
-    // Clear forms 
-    setMecanica({}); setEletrica({}); setExterna({}); setLubrificacao({}); setCalibragem({});
-    setHeaderPlaca('');
+      const newHistory = data ? [...data, ...history] : [];
+      setHistory(newHistory);
 
-    alert('Inspeção salva com sucesso!');
-    setViewMode('historico');
+      // Clear forms
+      setMecanica({}); setEletrica({}); setExterna({}); setLubrificacao({}); setCalibragem({});
+      setHeaderPlaca('');
+
+      alert('Inspeção salva com sucesso!');
+      setViewMode('historico');
+    } catch (e: any) {
+      alert(`Erro ao salvar inspeção: ${e.message}`);
+    }
   };
 
   const handleShare = (inspeccao: any) => {
@@ -773,14 +815,9 @@ Faça login no sistema para ver os detalhes completos.`;
                   className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium appearance-none hover:border-slate-300 transition-colors shadow-sm"
                 >
                   <option value="">Selecione o veículo...</option>
-                  {(() => {
-                    try {
-                      const frotas = JSON.parse(localStorage.getItem('frotas') || '[]');
-                      return frotas.map((f: any) => (
-                        <option key={f.id} value={f.placa}>{f.placa} ({f.modelo})</option>
-                      ));
-                    } catch { return null; }
-                  })()}
+                  {frotasLocal.map((f: any) => (
+                    <option key={f.placa} value={f.placa}>{f.placa} ({f.modelo})</option>
+                  ))}
                 </select>
                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
                   <ChevronDown className="w-4 h-4" />
@@ -826,23 +863,12 @@ Faça login no sistema para ver os detalhes completos.`;
                   className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium appearance-none hover:border-slate-300 transition-colors shadow-sm"
                 >
                   <option value="">Selecione o responsável...</option>
-                  {(() => {
-                    try {
-                      // List system users (Acessos) - prioritizing names
-                      const acessos = JSON.parse(localStorage.getItem('acessos') || '[]');
-                      const systemUsers = acessos.map((u: any) => (
-                        <option key={`a-${u.id}`} value={u.nome || u.email}>{u.nome || u.email} (Usuário)</option>
-                      ));
-
-                      // List employees
-                      const funcionarios = JSON.parse(localStorage.getItem('funcionarios') || '[]');
-                      const employees = funcionarios.map((f: any) => (
-                        <option key={`f-${f.id}`} value={f.nome}>{f.nome} ({f.cargo})</option>
-                      ));
-
-                      return [...systemUsers, ...employees];
-                    } catch { return null; }
-                  })()}
+                  {acessosLocal.map((u: any, idx: number) => (
+                    <option key={`a-${idx}`} value={u.nome || u.email}>{u.nome || u.email} (Usuário)</option>
+                  ))}
+                  {funcionariosLocal.map((u: any, idx: number) => (
+                    <option key={`f-${idx}`} value={u.nome}>{u.nome} (Funcionário)</option>
+                  ))}
                 </select>
                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
                   <ChevronDown className="w-4 h-4" />
@@ -984,17 +1010,28 @@ Faça login no sistema para ver os detalhes completos.`;
 function DatabaseView() {
   const [activeForm, setActiveForm] = useState<'frotas' | 'funcionarios' | 'logins'>('frotas');
 
-  const [frotas, setFrotas] = useState<any[]>(() => {
-    try { return JSON.parse(localStorage.getItem('frotas') || '[]'); } catch { return []; }
-  });
-  const [funcionarios, setFuncionarios] = useState<any[]>(() => {
-    try { return JSON.parse(localStorage.getItem('funcionarios') || '[]'); } catch { return []; }
-  });
-  const [acessos, setAcessos] = useState<any[]>(() => {
-    try { return JSON.parse(localStorage.getItem('acessos') || '[]'); } catch { return []; }
-  });
+  const [frotas, setFrotas] = useState<any[]>([]);
+  const [funcionarios, setFuncionarios] = useState<any[]>([]);
+  const [acessos, setAcessos] = useState<any[]>([]);
+  const [loadingDados, setLoadingDados] = useState(false);
 
-  const saveToStorage = (key: string, data: any[]) => localStorage.setItem(key, JSON.stringify(data));
+  useEffect(() => {
+    async function loadData() {
+      setLoadingDados(true);
+
+      const { data: df } = await supabase.from('frotas').select('*').order('created_at', { ascending: false });
+      if (df) setFrotas(df);
+
+      const { data: dfunc } = await supabase.from('funcionarios').select('*').order('created_at', { ascending: false });
+      if (dfunc) setFuncionarios(dfunc);
+
+      const { data: dac } = await supabase.from('acessos').select('*').order('created_at', { ascending: false });
+      if (dac) setAcessos(dac);
+
+      setLoadingDados(false);
+    }
+    loadData();
+  }, []);
 
   const [frotaPlaca, setFrotaPlaca] = useState('');
   const [frotaModelo, setFrotaModelo] = useState('');
@@ -1018,55 +1055,70 @@ function DatabaseView() {
     setEditingId(null);
   };
 
-  const handleSaveFrota = (e: React.FormEvent) => {
+  const handleSaveFrota = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!frotaPlaca || !frotaModelo || !frotaTipo) return alert('Preencha todos os campos!');
 
-    let newData;
-    if (editingId) {
-      newData = frotas.map(f => f.id === editingId ? { ...f, placa: frotaPlaca, modelo: frotaModelo, tipo: frotaTipo } : f);
-      alert('Veículo atualizado com sucesso!');
-    } else {
-      newData = [...frotas, { id: Date.now(), placa: frotaPlaca, modelo: frotaModelo, tipo: frotaTipo }];
-      alert('Veículo cadastrado com sucesso!');
+    try {
+      if (editingId) {
+        const { data, error } = await supabase.from('frotas').update({ placa: frotaPlaca, modelo: frotaModelo, tipo: frotaTipo }).eq('id', editingId).select();
+        if (error) throw error;
+        setFrotas(frotas.map(f => f.id === editingId ? data[0] : f));
+        alert('Veículo atualizado com sucesso!');
+      } else {
+        const { data, error } = await supabase.from('frotas').insert([{ placa: frotaPlaca, modelo: frotaModelo, tipo: frotaTipo }]).select();
+        if (error) throw error;
+        if (data) setFrotas([data[0], ...frotas]);
+        alert('Veículo cadastrado com sucesso!');
+      }
+      clearForm();
+    } catch (e: any) {
+      alert('Erro: ' + e.message);
     }
-
-    setFrotas(newData); saveToStorage('frotas', newData);
-    clearForm();
   };
 
-  const handleSaveFuncionario = (e: React.FormEvent) => {
+  const handleSaveFuncionario = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!funcNome || !funcCargo) return alert('Preencha todos os campos!');
+    if (!funcNome || !funcCargo) return alert('Preencha os campos obrigatórios!');
 
-    let newData;
-    if (editingId) {
-      newData = funcionarios.map(f => f.id === editingId ? { ...f, nome: funcNome, email: funcEmail, cargo: funcCargo } : f);
-      alert('Funcionário atualizado com sucesso!');
-    } else {
-      newData = [...funcionarios, { id: Date.now(), nome: funcNome, email: funcEmail, cargo: funcCargo }];
-      alert('Funcionário cadastrado com sucesso!');
+    try {
+      if (editingId) {
+        const { data, error } = await supabase.from('funcionarios').update({ nome: funcNome, email: funcEmail, cargo: funcCargo }).eq('id', editingId).select();
+        if (error) throw error;
+        setFuncionarios(funcionarios.map(f => f.id === editingId ? data[0] : f));
+        alert('Funcionário atualizado com sucesso!');
+      } else {
+        const { data, error } = await supabase.from('funcionarios').insert([{ nome: funcNome, email: funcEmail, cargo: funcCargo }]).select();
+        if (error) throw error;
+        if (data) setFuncionarios([data[0], ...funcionarios]);
+        alert('Funcionário cadastrado com sucesso!');
+      }
+      clearForm();
+    } catch (e: any) {
+      alert('Erro: ' + e.message);
     }
-
-    setFuncionarios(newData); saveToStorage('funcionarios', newData);
-    clearForm();
   };
 
-  const handleSaveAcesso = (e: React.FormEvent) => {
+  const handleSaveAcesso = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!acessoEmail || !acessoSenha || !acessoNivel) return alert('Preencha todos os campos!');
+    if (!acessoEmail || !acessoSenha || !acessoNivel) return alert('Preencha os campos obrigatórios!');
 
-    let newData;
-    if (editingId) {
-      newData = acessos.map(f => f.id === editingId ? { ...f, nome: acessoNome, email: acessoEmail, senha: acessoSenha, nivel: acessoNivel } : f);
-      alert('Acesso atualizado com sucesso!');
-    } else {
-      newData = [...acessos, { id: Date.now(), nome: acessoNome, email: acessoEmail, senha: acessoSenha, nivel: acessoNivel }];
-      alert('Acesso cadastrado com sucesso!');
+    try {
+      if (editingId) {
+        const { data, error } = await supabase.from('acessos').update({ nome: acessoNome, email: acessoEmail, senha: acessoSenha, nivel: acessoNivel }).eq('id', editingId).select();
+        if (error) throw error;
+        setAcessos(acessos.map(f => f.id === editingId ? data[0] : f));
+        alert('Acesso atualizado com sucesso!');
+      } else {
+        const { data, error } = await supabase.from('acessos').insert([{ nome: acessoNome, email: acessoEmail, senha: acessoSenha, nivel: acessoNivel }]).select();
+        if (error) throw error;
+        if (data) setAcessos([data[0], ...acessos]);
+        alert('Acesso cadastrado com sucesso!');
+      }
+      clearForm();
+    } catch (e: any) {
+      alert('Erro: ' + e.message);
     }
-
-    setAcessos(newData); saveToStorage('acessos', newData);
-    clearForm();
   };
 
   const startEditFrota = (f: any) => {
@@ -1096,19 +1148,25 @@ function DatabaseView() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const deleteItem = (type: 'frotas' | 'funcionarios' | 'acessos', id: number) => {
+  const deleteItem = async (type: 'frotas' | 'funcionarios' | 'acessos', id: number) => {
     if (!window.confirm('Tem certeza que deseja excluir?')) return;
-    if (type === 'frotas') {
-      const filtered = frotas.filter(f => f.id !== id);
-      setFrotas(filtered); saveToStorage('frotas', filtered);
-    } else if (type === 'funcionarios') {
-      const filtered = funcionarios.filter(f => f.id !== id);
-      setFuncionarios(filtered); saveToStorage('funcionarios', filtered);
-    } else if (type === 'acessos') {
-      const filtered = acessos.filter(f => f.id !== id);
-      setAcessos(filtered); saveToStorage('acessos', filtered);
+
+    try {
+      const { error } = await supabase.from(type).delete().eq('id', id);
+      if (error) throw error;
+
+      if (type === 'frotas') {
+        setFrotas(frotas.filter(f => f.id !== id));
+      } else if (type === 'funcionarios') {
+        setFuncionarios(funcionarios.filter(f => f.id !== id));
+      } else if (type === 'acessos') {
+        setAcessos(acessos.filter(f => f.id !== id));
+      }
+
+      if (editingId === id) setEditingId(null);
+    } catch (e: any) {
+      alert("Erro ao excluir: " + e.message);
     }
-    if (editingId === id) setEditingId(null);
   };
 
   return (
@@ -1116,6 +1174,7 @@ function DatabaseView() {
       <header className="mb-8 pt-2">
         <h1 className="text-[28px] font-extrabold tracking-tight text-slate-800">Gestão de Cadastros</h1>
         <p className="text-slate-500 mt-2 font-medium">Cadastre frotas, funcionários e acessos ao sistema.</p>
+        {loadingDados && <p className="text-blue-500 font-bold mt-2 animate-pulse">Carregando dados...</p>}
       </header>
 
       {/* Tabs para os formulários */}
@@ -1501,40 +1560,50 @@ function DatabaseView() {
 function DashboardView() {
   const [stats, setStats] = useState({ inspections: 0, nonConformities: 0, activeFrotas: 0 });
   const [preventivaStats, setPreventivaStats] = useState({ onTime: 0, attention: 0, critical: 0 });
+  const [preventivasData, setPreventivasData] = useState<any[]>([]);
 
   useEffect(() => {
-    // Inspections
-    const lastInspection = localStorage.getItem('last_inspection');
-    let inspectionsCount = 0;
-    let ncCount = 0;
-    if (lastInspection) {
-      const data = JSON.parse(lastInspection);
-      inspectionsCount = 1;
-      ['mecanica', 'eletrica', 'externa', 'lubrificacao', 'calibragem'].forEach(sectionKey => {
-        if (data[sectionKey]) {
-          ncCount += Object.values(data[sectionKey] as SectionState).filter(i => i.status === 'NÃO CONFORME').length;
-        }
-      });
+    async function fetchData() {
+      // Frotas
+      const { data: frotasData } = await supabase.from('frotas').select('id');
+      const activeFrotas = frotasData?.length || 0;
+
+      // Inspeções (Métricas simplificadas pegando a última inspeção ou o total)
+      // Para as não conformidades vamos pegar os últimos itens
+      const { data: inspData } = await supabase.from('inspecoes').select('*').order('created_at', { ascending: false }).limit(10);
+      let inspectionsCount = inspData?.length || 0;
+      let ncCount = 0;
+
+      if (inspData && inspData.length > 0) {
+        inspData.forEach((data) => {
+          ['mecanica', 'eletrica', 'externa', 'lubrificacao', 'calibragem'].forEach(sectionKey => {
+            if (data[sectionKey]) {
+              ncCount += Object.values(data[sectionKey] as SectionState).filter(i => i.status === 'NÃO CONFORME').length;
+            }
+          });
+        });
+      }
+
+      setStats({ inspections: inspectionsCount, nonConformities: ncCount, activeFrotas });
+
+      // Preventivas
+      const { data: prevData } = await supabase.from('preventivas').select('*');
+      let onTime = 0, attention = 0, critical = 0;
+
+      if (prevData) {
+        prevData.forEach((p: any) => {
+          const diff = parseInt(p.intervalo) - (parseInt(p.atual) - parseInt(p.ultima || '0'));
+          if (diff < 20) critical++;
+          else if (diff <= 60) attention++;
+          else onTime++;
+        });
+        setPreventivasData(prevData);
+      }
+
+      setPreventivaStats({ onTime, attention, critical });
     }
 
-    // Frotas
-    const frotas = JSON.parse(localStorage.getItem('frotas') || '[]');
-    const activeFrotas = frotas.length;
-
-    setStats({ inspections: inspectionsCount, nonConformities: ncCount, activeFrotas });
-
-    // Preventivas
-    const preventivas = JSON.parse(localStorage.getItem('preventivas') || '[]');
-    let onTime = 0, attention = 0, critical = 0;
-
-    preventivas.forEach((p: any) => {
-      const diff = parseInt(p.intervalo) - (parseInt(p.atual) - parseInt(p.ultima));
-      if (diff < 20) critical++;
-      else if (diff <= 60) attention++;
-      else onTime++;
-    });
-
-    setPreventivaStats({ onTime, attention, critical });
+    fetchData();
   }, []);
 
   return (
@@ -1626,8 +1695,7 @@ function DashboardView() {
             <h3 className="text-xs font-bold text-slate-500 mb-4 uppercase tracking-wider">Atenção Necessária</h3>
             <div className="space-y-3">
               {(() => {
-                const preventivas = JSON.parse(localStorage.getItem('preventivas') || '[]');
-                const needed = preventivas.filter((p: any) => (parseInt(p.intervalo) - (parseInt(p.atual) - parseInt(p.ultima))) <= 60);
+                const needed = preventivasData.filter((p: any) => (parseInt(p.intervalo) - (parseInt(p.atual) - parseInt(p.ultima))) <= 60);
 
                 if (needed.length === 0) {
                   return (
@@ -1696,8 +1764,7 @@ function DashboardView() {
               {preventivaStats.onTime + preventivaStats.attention + preventivaStats.critical > 0 ? (
                 (() => {
                   try {
-                    const preventivas = JSON.parse(localStorage.getItem('preventivas') || '[]');
-                    return preventivas.map((p: any) => {
+                    return preventivasData.map((p: any) => {
                       const acumulado = parseInt(p.atual) - parseInt(p.ultima);
                       const restante = parseInt(p.intervalo) - acumulado;
                       const percentRemaining = Math.max(2, Math.min(100, Math.round((restante / parseInt(p.intervalo)) * 100)));
@@ -1824,38 +1891,27 @@ function LoginView({ onLogin }: { onLogin: () => void }) {
 
     if (normalizedEmail === 'ricardo.luz@eunaman.com.br' && password === '15975321') {
       finalizeLogin({ nome: 'Ricardo Luz', email: normalizedEmail });
+      setLoading(false);
       return;
     }
 
-    // Check locally first
     let userRecord = null;
     try {
-      const localAcessos = JSON.parse(localStorage.getItem('acessos') || '[]');
-      userRecord = localAcessos.find((a: any) => {
-        const aEmail = a?.email || '';
-        return aEmail.trim().toLowerCase() === normalizedEmail && a.senha === password;
-      });
-    } catch (e) { }
+      const { data, error } = await supabase
+        .from('acessos')
+        .select('*')
+        .ilike('email', normalizedEmail)
+        .eq('senha', password);
 
-    // Check Supabase if local fails
-    if (!userRecord) {
-      try {
-        const { data, error } = await supabase
-          .from('acessos')
-          .select('*')
-          .ilike('email', normalizedEmail)
-          .eq('senha', password);
-
-        if (error) {
-          console.error("Supabase login error:", error);
-        }
-
-        if (data && data.length > 0) {
-          userRecord = data[0];
-        }
-      } catch (e) {
-        console.error("Supabase exception:", e);
+      if (error) {
+        console.error("Supabase login error:", error);
       }
+
+      if (data && data.length > 0) {
+        userRecord = data[0];
+      }
+    } catch (e) {
+      console.error("Supabase exception:", e);
     }
 
     setLoading(false);
@@ -1885,25 +1941,20 @@ function LoginView({ onLogin }: { onLogin: () => void }) {
     setLoading(true);
     const normalizedEmail = email.trim().toLowerCase();
 
-    // Update locally
     let userRecord = null;
     try {
-      const localAcessos = JSON.parse(localStorage.getItem('acessos') || '[]');
-      const index = localAcessos.findIndex((a: any) => a.email.toLowerCase() === normalizedEmail);
-      if (index !== -1) {
-        localAcessos[index].senha = newPassword;
-        userRecord = localAcessos[index];
-        localStorage.setItem('acessos', JSON.stringify(localAcessos));
-      }
-    } catch (e) { }
-
-    // Update Supabase
-    try {
-      await supabase
+      const { data, error } = await supabase
         .from('acessos')
         .update({ senha: newPassword })
-        .ilike('email', normalizedEmail);
-    } catch (e) { }
+        .ilike('email', normalizedEmail)
+        .select();
+
+      if (!error && data && data.length > 0) {
+        userRecord = data[0];
+      }
+    } catch (e) {
+      console.error("Update password error", e);
+    }
 
     setLoading(false);
     setPassword(newPassword);
@@ -2065,9 +2116,19 @@ function PreventivaView() {
   const [intervalo, setIntervalo] = useState('500');
   const [dataInicio, setDataInicio] = useState(currentDate);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [preventivas, setPreventivas] = useState<any[]>(() => {
-    try { return JSON.parse(localStorage.getItem('preventivas') || '[]'); } catch { return []; }
-  });
+  const [preventivas, setPreventivas] = useState<any[]>([]);
+  const [frotasDisponiveis, setFrotasDisponiveis] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function loadFrotasAndPreventivas() {
+      const { data: df } = await supabase.from('frotas').select('*').order('placa', { ascending: true });
+      if (df) setFrotasDisponiveis(df);
+
+      const { data: dp } = await supabase.from('preventivas').select('*').order('created_at', { ascending: false });
+      if (dp) setPreventivas(dp);
+    }
+    loadFrotasAndPreventivas();
+  }, []);
 
   const clearForm = () => {
     setVeiculo('');
@@ -2079,7 +2140,7 @@ function PreventivaView() {
     setEditingId(null);
   };
 
-  const handleSavePreventiva = (e: React.FormEvent) => {
+  const handleSavePreventiva = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!veiculo || !plano || !atual || !intervalo) {
       alert('Preencha os campos obrigatórios!');
@@ -2087,41 +2148,32 @@ function PreventivaView() {
     }
 
     try {
-      const existing = JSON.parse(localStorage.getItem('preventivas') || '[]');
-      let updated;
+      const pData = {
+        veiculo,
+        plano,
+        ultima: ultima || '0',
+        atual,
+        intervalo,
+        data: dataInicio
+      };
 
       if (editingId) {
         // Update mode
-        updated = existing.map((p: any) => p.id === editingId ? {
-          ...p,
-          veiculo,
-          plano,
-          ultima: ultima || '0',
-          atual,
-          intervalo,
-          data: dataInicio
-        } : p);
+        const { data, error } = await supabase.from('preventivas').update(pData).eq('id', editingId).select();
+        if (error) throw error;
+        if (data) setPreventivas(preventivas.map(p => p.id === editingId ? data[0] : p));
         alert('Plano atualizado com sucesso!');
       } else {
         // Create mode
-        const newPreventiva = {
-          id: Date.now(),
-          veiculo,
-          plano,
-          ultima: ultima || '0',
-          atual,
-          intervalo,
-          data: dataInicio
-        };
-        updated = [...existing, newPreventiva];
+        const { data, error } = await supabase.from('preventivas').insert([pData]).select();
+        if (error) throw error;
+        if (data) setPreventivas([data[0], ...preventivas]);
         alert('Plano de preventiva ativado com sucesso!');
       }
 
-      localStorage.setItem('preventivas', JSON.stringify(updated));
-      setPreventivas(updated);
       clearForm();
-    } catch (e) {
-      alert('Erro ao salvar no banco de dados.');
+    } catch (e: any) {
+      alert('Erro ao salvar no banco de dados. ' + e.message);
     }
   };
 
@@ -2138,11 +2190,15 @@ function PreventivaView() {
     window.scrollTo(0, 0);
   };
 
-  const deletePreventiva = (id: number) => {
+  const deletePreventiva = async (id: number) => {
     if (!window.confirm('Excluir este plano de preventiva?')) return;
-    const updated = preventivas.filter(p => p.id !== id);
-    localStorage.setItem('preventivas', JSON.stringify(updated));
-    setPreventivas(updated);
+    try {
+      const { error } = await supabase.from('preventivas').delete().eq('id', id);
+      if (error) throw error;
+      setPreventivas(preventivas.filter(p => p.id !== id));
+    } catch (e: any) {
+      alert('Erro ao deletar: ' + e.message);
+    }
   };
 
   return (
@@ -2196,14 +2252,9 @@ function PreventivaView() {
                 className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold appearance-none hover:border-slate-300 transition-colors shadow-sm"
               >
                 <option value="">Selecione o veículo...</option>
-                {(() => {
-                  try {
-                    const frotas = JSON.parse(localStorage.getItem('frotas') || '[]');
-                    return frotas.map((f: any) => (
-                      <option key={f.id} value={f.placa}>{f.placa} ({f.modelo})</option>
-                    ));
-                  } catch { return null; }
-                })()}
+                {frotasDisponiveis.map((f: any) => (
+                  <option key={f.placa} value={f.placa}>{f.placa} ({f.modelo})</option>
+                ))}
               </select>
               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
                 <ChevronDown className="w-4 h-4" />
