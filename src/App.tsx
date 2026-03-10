@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Truck, Calendar, Clock, User, CheckCircle, XCircle, MinusCircle, ChevronUp, ChevronDown, ListChecks, Database, Menu, X, Camera, ImagePlus, Trash2, Users, Key, Save, Droplet, Gauge, ClipboardCheck, BarChart3, Lock, Wrench, Pencil, Sun, Moon } from 'lucide-react';
+import { Truck, Calendar, Clock, User, CheckCircle, XCircle, MinusCircle, ChevronUp, ChevronDown, ListChecks, Database, Menu, X, Camera, ImagePlus, Trash2, Users, Key, Save, Droplet, Gauge, ClipboardCheck, BarChart3, Lock, Wrench, Pencil, Sun, Moon, Building2 } from 'lucide-react';
 import { supabase } from './lib/supabase';
 
 const mechanicallyItems = [
@@ -1008,11 +1008,12 @@ Faça login no sistema para ver os detalhes completos.`;
 }
 
 function DatabaseView() {
-  const [activeForm, setActiveForm] = useState<'frotas' | 'funcionarios' | 'logins'>('frotas');
+  const [activeForm, setActiveForm] = useState<'frotas' | 'funcionarios' | 'logins' | 'empresas'>('frotas');
 
   const [frotas, setFrotas] = useState<any[]>([]);
   const [funcionarios, setFuncionarios] = useState<any[]>([]);
   const [acessos, setAcessos] = useState<any[]>([]);
+  const [empresas, setEmpresas] = useState<any[]>([]);
   const [loadingDados, setLoadingDados] = useState(false);
 
   useEffect(() => {
@@ -1028,6 +1029,9 @@ function DatabaseView() {
       const { data: dac } = await supabase.from('acessos').select('*').order('created_at', { ascending: false });
       if (dac) setAcessos(dac);
 
+      const { data: demp } = await supabase.from('empresas').select('*').order('nome', { ascending: true });
+      if (demp) setEmpresas(demp);
+
       setLoadingDados(false);
     }
     loadData();
@@ -1037,6 +1041,8 @@ function DatabaseView() {
   const [frotaModelo, setFrotaModelo] = useState('');
   const [frotaTipo, setFrotaTipo] = useState('');
   const [frotaEmpresa, setFrotaEmpresa] = useState('');
+
+  const [empresaNome, setEmpresaNome] = useState('');
 
   const [funcNome, setFuncNome] = useState('');
   const [funcEmail, setFuncEmail] = useState('');
@@ -1053,6 +1059,7 @@ function DatabaseView() {
     setFrotaPlaca(''); setFrotaModelo(''); setFrotaTipo(''); setFrotaEmpresa('');
     setFuncNome(''); setFuncEmail(''); setFuncCargo('');
     setAcessoNome(''); setAcessoEmail(''); setAcessoSenha(''); setAcessoNivel('');
+    setEmpresaNome('');
     setEditingId(null);
   };
 
@@ -1122,6 +1129,28 @@ function DatabaseView() {
     }
   };
 
+  const handleSaveEmpresa = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!empresaNome) return alert('Preencha o nome da empresa!');
+
+    try {
+      if (editingId) {
+        const { data, error } = await supabase.from('empresas').update({ nome: empresaNome }).eq('id', editingId).select();
+        if (error) throw error;
+        setEmpresas(empresas.map(emp => emp.id === editingId ? data[0] : emp));
+        alert('Empresa atualizada com sucesso!');
+      } else {
+        const { data, error } = await supabase.from('empresas').insert([{ nome: empresaNome }]).select();
+        if (error) throw error;
+        if (data) setEmpresas([...empresas, data[0]].sort((a, b) => a.nome.localeCompare(b.nome)));
+        alert('Empresa cadastrada com sucesso!');
+      }
+      clearForm();
+    } catch (e: any) {
+      alert('Erro: ' + e.message);
+    }
+  };
+
   const startEditFrota = (f: any) => {
     console.log("Iniciando edição de frota:", f);
     setEditingId(f.id);
@@ -1150,7 +1179,13 @@ function DatabaseView() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const deleteItem = async (type: 'frotas' | 'funcionarios' | 'acessos', id: number) => {
+  const startEditEmpresa = (f: any) => {
+    setEditingId(f.id);
+    setEmpresaNome(f.nome);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const deleteItem = async (type: 'frotas' | 'funcionarios' | 'acessos' | 'empresas', id: number) => {
     if (!window.confirm('Tem certeza que deseja excluir?')) return;
 
     try {
@@ -1163,6 +1198,8 @@ function DatabaseView() {
         setFuncionarios(funcionarios.filter(f => f.id !== id));
       } else if (type === 'acessos') {
         setAcessos(acessos.filter(f => f.id !== id));
+      } else if (type === 'empresas') {
+        setEmpresas(empresas.filter(f => f.id !== id));
       }
 
       if (editingId === id) setEditingId(null);
@@ -1190,6 +1227,16 @@ function DatabaseView() {
         >
           <Truck className="w-[18px] h-[18px]" />
           Frotas
+        </button>
+        <button
+          onClick={() => { setActiveForm('empresas'); clearForm(); }}
+          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all ${activeForm === 'empresas'
+            ? 'bg-blue-600 text-white shadow-md'
+            : 'text-slate-500 hover:bg-slate-50'
+            }`}
+        >
+          <Building2 className="w-[18px] h-[18px]" />
+          Empresas
         </button>
         <button
           onClick={() => { setActiveForm('funcionarios'); clearForm(); }}
@@ -1287,9 +1334,9 @@ function DatabaseView() {
                 <div className="relative">
                   <select value={frotaEmpresa} onChange={e => setFrotaEmpresa(e.target.value)} className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium appearance-none hover:border-slate-300 transition-colors shadow-sm">
                     <option value="">Selecione a empresa...</option>
-                    <option value="Empresa 1">Empresa 1</option>
-                    <option value="Empresa 2">Empresa 2</option>
-                    <option value="Empresa 3">Empresa 3</option>
+                    {empresas.map(emp => (
+                      <option key={emp.id} value={emp.nome}>{emp.nome}</option>
+                    ))}
                   </select>
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
                     <ChevronDown className="w-4 h-4" />
@@ -1314,6 +1361,60 @@ function DatabaseView() {
               >
                 <Save className="w-[18px] h-[18px]" />
                 {editingId ? 'Salvar Alterações' : 'Salvar Veículo'}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* Formulário de Empresas */}
+        {activeForm === 'empresas' && (
+          <form className="space-y-6" onSubmit={handleSaveEmpresa}>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
+                <Building2 className="w-5 h-5 text-blue-600" />
+              </div>
+              <h2 className="text-lg font-extrabold text-slate-800 tracking-wide uppercase">
+                {editingId ? 'Editar Empresa' : 'Cadastro de Empresa'}
+              </h2>
+            </div>
+
+            {editingId && (
+              <div className="mb-6 p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-center gap-2 text-blue-700 text-xs font-bold uppercase tracking-wider">
+                <Pencil className="w-3.5 h-3.5" />
+                Modo de Edição Ativo
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 gap-x-6 gap-y-7">
+              <div>
+                <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                  Nome da Empresa <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={empresaNome} onChange={e => setEmpresaNome(e.target.value)}
+                  placeholder="Ex: Dellus Transportes"
+                  className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium placeholder:text-slate-400 hover:border-slate-300 transition-colors shadow-sm"
+                />
+              </div>
+            </div>
+
+            <div className="pt-6 flex justify-end gap-3">
+              {editingId && (
+                <button
+                  type="button"
+                  onClick={clearForm}
+                  className="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-6 py-3.5 rounded-xl transition-all text-[14px] uppercase tracking-wide"
+                >
+                  Cancelar
+                </button>
+              )}
+              <button
+                type="submit"
+                className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold px-6 py-3.5 rounded-xl shadow-md active:scale-[0.98] transition-all text-[14px] uppercase tracking-wide w-full sm:w-auto"
+              >
+                <Save className="w-[18px] h-[18px]" />
+                {editingId ? 'Salvar Alterações' : 'Salvar Empresa'}
               </button>
             </div>
           </form>
@@ -1522,6 +1623,28 @@ function DatabaseView() {
                     <Pencil className="w-4 h-4" />
                   </button>
                   <button onClick={() => deleteItem('frotas', f.id)} className="text-slate-400 hover:text-red-500 p-2 transition-colors">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {activeForm === 'empresas' && (
+          <div className="divide-y divide-slate-100">
+            {empresas.length === 0 && <div className="p-6 text-center text-slate-500 font-medium tracking-wide text-sm">Nenhuma empresa cadastrada.</div>}
+            {empresas.map(f => (
+              <div key={f.id} className="p-4 sm:px-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                <div>
+                  <div className="font-bold text-slate-800 uppercase">{f.nome}</div>
+                  <div className="text-[10px] text-slate-400 font-medium">Cadastrada em {new Date(f.created_at).toLocaleDateString()}</div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => startEditEmpresa(f)} className="text-slate-400 hover:text-blue-500 p-2 transition-colors">
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => deleteItem('empresas', f.id)} className="text-slate-400 hover:text-red-500 p-2 transition-colors">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
