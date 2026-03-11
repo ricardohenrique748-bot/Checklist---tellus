@@ -519,10 +519,6 @@ function ChecklistView() {
   const calibragemItemsCount = calibrationItems.length;
   const calibragemCompleted = Object.values(calibragem).filter((i: any) => i.status !== null).length;
 
-  // Total geral para referência
-  const totalItemsCount = checklistItemsCount + lubrificacaoItemsCount + calibragemItemsCount;
-  const totalCompleted = checklistCompleted + lubrificacaoCompleted + calibragemCompleted;
-
   const handleSave = async () => {
     if (!headerPlaca) {
       alert('Por favor, selecione uma placa/equipamento.');
