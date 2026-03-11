@@ -3300,19 +3300,18 @@ function OSView() {
                       if (!empresaOS && frota.empresa) {
                         setEmpresaOS(frota.empresa);
                       }
-                      // Busca último KM e Horímetro registrado nas OS para essa placa
-                      const { data: ultimaOS } = await supabase
-                        .from('ordens_servico')
-                        .select('km, horimetro')
-                        .eq('placa', selPlaca)
-                        .not('km', 'is', null)
+                      // Busca KM e Horímetro mais recentes da tabela preventivas para essa placa
+                      const { data: prevData } = await supabase
+                        .from('preventivas')
+                        .select('km, atual')
+                        .eq('veiculo', selPlaca)
                         .order('created_at', { ascending: false })
                         .limit(1);
-                      if (ultimaOS && ultimaOS.length > 0) {
-                        setKm(ultimaOS[0].km || '');
-                        setHorimetro(ultimaOS[0].horimetro || '');
+                      if (prevData && prevData.length > 0) {
+                        setKm(prevData[0].km || '');
+                        setHorimetro(prevData[0].atual || '');
                       } else {
-                        // Fallback: usa o km da tabela frotas se não houver OS anterior
+                        // Fallback: usa o km da tabela frotas se não houver preventiva cadastrada
                         setKm(frota.km || '');
                         setHorimetro('');
                       }
