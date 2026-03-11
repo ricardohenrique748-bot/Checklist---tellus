@@ -1792,41 +1792,6 @@ function DashboardView({ isPublic = false }: { isPublic?: boolean }) {
       if (filterEmpresa) frotasQuery = frotasQuery.eq('empresa', filterEmpresa);
 
       const { data: frotasData } = await frotasQuery;
-      const activeFrotas = frotasData?.length || 0;
-
-      // Inspeções (Métricas considerando filtros e toda a base retornada)
-      let inspQuery = supabase.from('inspecoes').select('*').order('created_at', { ascending: false });
-      if (filterPlaca) inspQuery = inspQuery.eq('placa', filterPlaca);
-      if (filterStartDate) inspQuery = inspQuery.gte('data', filterStartDate);
-      if (filterEndDate) inspQuery = inspQuery.lte('data', filterEndDate);
-
-      if (!filterPlaca && filterEmpresa && frotasData) {
-        const placasDaEmpresa = frotasData.map((f: any) => f.placa);
-        if (placasDaEmpresa.length > 0) {
-          inspQuery = inspQuery.in('placa', placasDaEmpresa);
-        } else {
-          inspQuery = inspQuery.in('placa', ['NENHUMA_PLACA_VALIDA']);
-        }
-      }
-
-      // Limit to 10 if no filter is applied just to behave similarly to before, otherwise fetch all
-      if (!filterPlaca && !filterEmpresa && !filterStartDate && !filterEndDate) {
-        inspQuery = inspQuery.limit(10);
-      }
-
-      const { data: inspData } = await inspQuery;
-      let inspectionsCount = inspData?.length || 0;
-      let ncCount = 0;
-
-      if (inspData && inspData.length > 0) {
-        inspData.forEach((data) => {
-          ['mecanica', 'eletrica', 'externa', 'lubrificacao', 'calibragem'].forEach(sectionKey => {
-            if (data[sectionKey]) {
-              ncCount += Object.values(data[sectionKey] as SectionState).filter(i => i.status === 'NÃO CONFORME').length;
-            }
-          });
-        });
-      }
 
 
 
