@@ -1761,6 +1761,7 @@ function DatabaseView() {
 function DashboardView({ isPublic = false }: { isPublic?: boolean }) {
   const [preventivaStats, setPreventivaStats] = useState({ onTime: 0, attention: 0, critical: 0, truckAttention: 0, implementAttention: 0 });
   const [preventivasData, setPreventivasData] = useState<any[]>([]);
+  const [activeCard, setActiveCard] = useState<string | null>(null);
 
   const [filterStartDate, setFilterStartDate] = useState('');
   const [filterEndDate, setFilterEndDate] = useState('');
@@ -1967,7 +1968,9 @@ function DashboardView({ isPublic = false }: { isPublic?: boolean }) {
         <div className="space-y-8">
           {/* KPI's */}
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-6">
-            <div className="flex items-start gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
+            <div
+              onClick={() => setActiveCard(activeCard === 'onTime' ? null : 'onTime')}
+              className={`flex items-start gap-4 p-4 rounded-xl cursor-pointer transition-all ${activeCard === 'onTime' ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-500/20' : 'bg-slate-50 border-slate-100 hover:border-emerald-300'}`}>
               <div className="w-3 h-3 rounded-full bg-emerald-500 mt-1.5 shrink-0"></div>
               <div>
                 <div className="text-3xl font-black text-slate-800">{preventivaStats.onTime}</div>
@@ -1975,7 +1978,9 @@ function DashboardView({ isPublic = false }: { isPublic?: boolean }) {
               </div>
             </div>
 
-            <div className="flex items-start gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
+            <div
+              onClick={() => setActiveCard(activeCard === 'attention' ? null : 'attention')}
+              className={`flex items-start gap-4 p-4 rounded-xl cursor-pointer transition-all ${activeCard === 'attention' ? 'bg-amber-50 border-amber-400 ring-2 ring-amber-400/20' : 'bg-slate-50 border-slate-100 hover:border-amber-300'}`}>
               <div className="w-3 h-3 rounded-full bg-amber-400 mt-1.5 shrink-0"></div>
               <div>
                 <div className="text-3xl font-black text-slate-800">{preventivaStats.attention}</div>
@@ -1983,7 +1988,9 @@ function DashboardView({ isPublic = false }: { isPublic?: boolean }) {
               </div>
             </div>
 
-            <div className="flex items-start gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
+            <div
+              onClick={() => setActiveCard(activeCard === 'critical' ? null : 'critical')}
+              className={`flex items-start gap-4 p-4 rounded-xl cursor-pointer transition-all ${activeCard === 'critical' ? 'bg-red-50 border-red-500 ring-2 ring-red-500/20' : 'bg-slate-50 border-slate-100 hover:border-red-300'}`}>
               <div className="w-3 h-3 rounded-full bg-red-500 mt-1.5 shrink-0"></div>
               <div>
                 <div className="text-3xl font-black text-slate-800">{preventivaStats.critical}</div>
@@ -1991,7 +1998,9 @@ function DashboardView({ isPublic = false }: { isPublic?: boolean }) {
               </div>
             </div>
 
-            <div className="flex items-start gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
+            <div
+              onClick={() => setActiveCard(activeCard === 'truckAttention' ? null : 'truckAttention')}
+              className={`flex items-start gap-4 p-4 rounded-xl cursor-pointer transition-all ${activeCard === 'truckAttention' ? 'bg-blue-50 border-blue-500 ring-2 ring-blue-500/20' : 'bg-slate-50 border-slate-100 hover:border-blue-300'}`}>
               <div className="w-3 h-3 rounded-full bg-blue-500 mt-1.5 shrink-0"></div>
               <div>
                 <div className="text-3xl font-black text-slate-800">{preventivaStats.truckAttention}</div>
@@ -1999,7 +2008,9 @@ function DashboardView({ isPublic = false }: { isPublic?: boolean }) {
               </div>
             </div>
 
-            <div className="flex items-start gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100 col-span-2 lg:col-span-1">
+            <div
+              onClick={() => setActiveCard(activeCard === 'implementAttention' ? null : 'implementAttention')}
+              className={`flex items-start gap-4 p-4 rounded-xl col-span-2 lg:col-span-1 cursor-pointer transition-all ${activeCard === 'implementAttention' ? 'bg-indigo-50 border-indigo-500 ring-2 ring-indigo-500/20' : 'bg-slate-50 border-slate-100 hover:border-indigo-300'}`}>
               <div className="w-3 h-3 rounded-full bg-indigo-500 mt-1.5 shrink-0"></div>
               <div>
                 <div className="text-3xl font-black text-slate-800">{preventivaStats.implementAttention}</div>
@@ -2010,61 +2021,110 @@ function DashboardView({ isPublic = false }: { isPublic?: boolean }) {
 
           {/* Details / Lista */}
           <div className="pt-6 border-t border-slate-100">
-            <h3 className="text-xs font-bold text-slate-500 mb-4 uppercase tracking-wider">Atenção Necessária</h3>
-            <div className="space-y-3">
-              {(() => {
-                const needed: any[] = [];
-                preventivasData.forEach((p: any) => {
-                  const acumulado = (parseInt(p.atual) || 0) - (parseInt(p.ultima) || 0);
-                  const restante = (parseInt(p.intervalo) || 500) - acumulado;
-                  if (restante <= 60) {
-                    needed.push({ ...p, restante, tipoLabel: 'CAMINHÃO' });
-                  }
+            {(() => {
+              let title = "Atenção Necessária";
+              let emptyMessage = "Nenhum veículo necessitando de atenção";
+              let emptySubMessage = "Sua frota está em dia com as preventivas.";
 
-                  if (p.intervalo_implemento && parseInt(p.intervalo_implemento) > 0) {
-                    const acumuladoImp = (parseInt(p.atual_implemento) || 0) - (parseInt(p.ultima_implemento) || 0);
-                    const restanteImp = (parseInt(p.intervalo_implemento) || 500) - acumuladoImp;
-                    if (restanteImp <= 60) {
-                      needed.push({ ...p, restante: restanteImp, tipoLabel: 'IMPLEMENTO' });
-                    }
-                  }
-                });
+              if (activeCard === 'onTime') {
+                title = "Veículos No Prazo";
+                emptyMessage = "Nenhum veículo no prazo";
+                emptySubMessage = "";
+              } else if (activeCard === 'attention') {
+                title = "Veículos A Vencer";
+                emptyMessage = "Nenhum veículo a vencer";
+                emptySubMessage = "";
+              } else if (activeCard === 'critical') {
+                title = "Veículos Atrasadas";
+                emptyMessage = "Nenhum veículo atrasado";
+                emptySubMessage = "";
+              } else if (activeCard === 'truckAttention') {
+                title = "Caminhões Vencidos/A Vencer";
+                emptyMessage = "Nenhum caminhão necessitando de atenção";
+                emptySubMessage = "";
+              } else if (activeCard === 'implementAttention') {
+                title = "Implementos Vencidos/A Vencer";
+                emptyMessage = "Nenhum implemento necessitando de atenção";
+                emptySubMessage = "";
+              }
 
-                if (needed.length === 0) {
-                  return (
-                    <div className="flex flex-col items-center justify-center p-8 rounded-xl bg-slate-50 border border-slate-100 border-dashed text-center">
-                      <Truck className="w-8 h-8 text-slate-300 mb-3" />
-                      <div className="font-extrabold text-slate-500">Nenhum veículo necessitando de atenção</div>
-                      <div className="text-xs font-medium text-slate-400 mt-1">Sua frota está em dia com as preventivas.</div>
-                    </div>
-                  );
-                }
+              return (
+                <>
+                  <h3 className="text-xs font-bold text-slate-500 mb-4 uppercase tracking-wider">{title}</h3>
+                  <div className="space-y-3">
+                    {(() => {
+                      const needed: any[] = [];
+                      preventivasData.forEach((p: any) => {
+                        const acumulado = (parseInt(p.atual) || 0) - (parseInt(p.ultima) || 0);
+                        const restante = (parseInt(p.intervalo) || 500) - acumulado;
 
-                return needed.map((item: any, idx: number) => {
-                  const isCritical = item.restante < 20;
-                  return (
-                    <div key={`${item.id}-${idx}`} className="flex items-center justify-between p-4 rounded-xl bg-white border border-slate-100 shadow-sm">
-                      <div className="flex items-center gap-4">
-                        <div className={`w-2 h-2 rounded-full ${isCritical ? 'bg-red-500 animate-pulse' : 'bg-amber-400'}`}></div>
-                        <div>
-                          <div className="font-bold text-slate-800 text-sm leading-tight">
-                            {item.veiculo} <span className="text-[10px] font-bold text-slate-400">({item.tipoLabel})</span>
-                            <div className="text-[10px] font-bold text-slate-400 uppercase">
-                              {frotasList.find(f => f.placa === item.veiculo)?.modelo || ''}
+                        let addTruck = false;
+                        if (!activeCard) addTruck = restante <= 60;
+                        else if (activeCard === 'onTime') addTruck = restante > 60;
+                        else if (activeCard === 'attention') addTruck = restante >= 20 && restante <= 60;
+                        else if (activeCard === 'critical') addTruck = restante < 20;
+                        else if (activeCard === 'truckAttention') addTruck = restante <= 60;
+
+                        if (addTruck) {
+                          needed.push({ ...p, restante, tipoLabel: 'CAMINHÃO' });
+                        }
+
+                        if (p.intervalo_implemento && parseInt(p.intervalo_implemento) > 0) {
+                          const acumuladoImp = (parseInt(p.atual_implemento) || 0) - (parseInt(p.ultima_implemento) || 0);
+                          const restanteImp = (parseInt(p.intervalo_implemento) || 500) - acumuladoImp;
+
+                          let addImp = false;
+                          if (!activeCard) addImp = restanteImp <= 60;
+                          else if (activeCard === 'onTime') addImp = restanteImp > 60;
+                          else if (activeCard === 'attention') addImp = restanteImp >= 20 && restanteImp <= 60;
+                          else if (activeCard === 'critical') addImp = restanteImp < 20;
+                          else if (activeCard === 'implementAttention') addImp = restanteImp <= 60;
+
+                          if (addImp) {
+                            needed.push({ ...p, restante: restanteImp, tipoLabel: 'IMPLEMENTO' });
+                          }
+                        }
+                      });
+
+                      if (needed.length === 0) {
+                        return (
+                          <div className="flex flex-col items-center justify-center p-8 rounded-xl bg-slate-50 border border-slate-100 border-dashed text-center">
+                            <Truck className="w-8 h-8 text-slate-300 mb-3" />
+                            <div className="font-extrabold text-slate-500">{emptyMessage}</div>
+                            <div className="text-xs font-medium text-slate-400 mt-1">{emptySubMessage}</div>
+                          </div>
+                        );
+                      }
+
+                      return needed.map((item: any, idx: number) => {
+                        const isCritical = item.restante < 20;
+                        const isOk = item.restante > 60;
+                        return (
+                          <div key={`${item.id}-${idx}`} className="flex items-center justify-between p-4 rounded-xl bg-white border border-slate-100 shadow-sm">
+                            <div className="flex items-center gap-4">
+                              <div className={`w-2 h-2 rounded-full ${isCritical ? 'bg-red-500 animate-pulse' : isOk ? 'bg-emerald-500' : 'bg-amber-400'}`}></div>
+                              <div>
+                                <div className="font-bold text-slate-800 text-sm leading-tight">
+                                  {item.veiculo} <span className="text-[10px] font-bold text-slate-400">({item.tipoLabel})</span>
+                                  <div className="text-[10px] font-bold text-slate-400 uppercase">
+                                    {frotasList.find(f => f.placa === item.veiculo)?.modelo || ''}
+                                  </div>
+                                </div>
+                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">{item.plano}</div>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className={`font-black text-sm ${isCritical ? 'text-red-600' : isOk ? 'text-emerald-500' : 'text-amber-500'}`}>{item.restante}h</div>
+                              <div className="text-[9px] font-bold text-slate-400 uppercase">Restante</div>
                             </div>
                           </div>
-                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">{item.plano}</div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className={`font-black text-sm ${isCritical ? 'text-red-600' : 'text-amber-500'}`}>{item.restante}h</div>
-                        <div className="text-[9px] font-bold text-slate-400 uppercase">Restante</div>
-                      </div>
-                    </div>
-                  );
-                });
-              })()}
-            </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       </div>
@@ -2101,7 +2161,31 @@ function DashboardView({ isPublic = false }: { isPublic?: boolean }) {
               {preventivaStats.onTime + preventivaStats.attention + preventivaStats.critical > 0 ? (
                 (() => {
                   try {
-                    return preventivasData.map((p: any) => {
+                    const filteredBars = preventivasData.filter((p: any) => {
+                      if (!activeCard) return true;
+
+                      const acumulado = (parseInt(p.atual) || 0) - (parseInt(p.ultima) || 0);
+                      const restante = (parseInt(p.intervalo) || 500) - acumulado;
+                      let keepTruck = false;
+                      if (activeCard === 'onTime') keepTruck = restante > 60;
+                      else if (activeCard === 'attention') keepTruck = restante >= 20 && restante <= 60;
+                      else if (activeCard === 'critical') keepTruck = restante < 20;
+                      else if (activeCard === 'truckAttention') keepTruck = restante <= 60;
+
+                      let keepImp = false;
+                      if (p.intervalo_implemento && parseInt(p.intervalo_implemento) > 0) {
+                        const acumuladoImp = (parseInt(p.atual_implemento) || 0) - (parseInt(p.ultima_implemento) || 0);
+                        const restanteImp = (parseInt(p.intervalo_implemento) || 500) - acumuladoImp;
+                        if (activeCard === 'onTime') keepImp = restanteImp > 60;
+                        else if (activeCard === 'attention') keepImp = restanteImp >= 20 && restanteImp <= 60;
+                        else if (activeCard === 'critical') keepImp = restanteImp < 20;
+                        else if (activeCard === 'implementAttention') keepImp = restanteImp <= 60;
+                      }
+
+                      return keepTruck || keepImp;
+                    });
+
+                    return filteredBars.map((p: any) => {
                       // Status Caminhão
                       const acumulado = (parseInt(p.atual) || 0) - (parseInt(p.ultima) || 0);
                       const restante = (parseInt(p.intervalo) || 500) - acumulado;
