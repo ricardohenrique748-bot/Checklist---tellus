@@ -1828,7 +1828,7 @@ function DashboardView({ isPublic = false }: { isPublic?: boolean }) {
         });
       }
 
-      setStats({ inspections: inspectionsCount, nonConformities: ncCount, activeFrotas });
+
 
       // Preventivas
       let prevQuery = supabase.from('preventivas').select('*');
