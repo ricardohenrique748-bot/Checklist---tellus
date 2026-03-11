@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Truck, Calendar, Clock, User, CheckCircle, XCircle, MinusCircle, ChevronUp, ChevronDown, ListChecks, Database, Menu, X, Camera, ImagePlus, Trash2, Users, Key, Save, Droplet, Gauge, ClipboardCheck, BarChart3, Lock, Wrench, Pencil, Sun, Moon, Building2, Share2, ClipboardList } from 'lucide-react';
 import { supabase } from './lib/supabase';
 
@@ -304,120 +304,7 @@ function ItemRow({
 }
 
 function SignatureField({ label }: { label: string }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const resizeCanvas = () => {
-      const parent = canvas.parentElement;
-      if (parent) {
-        // Get container dimensions
-        const rect = parent.getBoundingClientRect();
-
-        // Store existing image before resize to avoid clearing signature on device rotation etc
-        const ctx = canvas.getContext('2d');
-        let tempCanvas: HTMLCanvasElement | null = null;
-
-        if (ctx && canvas.width > 0 && canvas.height > 0) {
-          tempCanvas = document.createElement('canvas');
-          tempCanvas.width = canvas.width;
-          tempCanvas.height = canvas.height;
-          tempCanvas.getContext('2d')?.drawImage(canvas, 0, 0);
-        }
-
-        // Handle pixel density for crisp lines on retina and mobile displays
-        const ratio = Math.max(window.devicePixelRatio || 1, 1);
-        canvas.width = rect.width * ratio;
-        canvas.height = 120 * ratio; // 120px visual height
-
-        if (ctx) {
-          ctx.scale(ratio, ratio);
-          ctx.strokeStyle = '#0f172a'; // slate-900 (black/dark blue for pen)
-          ctx.lineWidth = 3;
-          ctx.lineCap = 'round';
-          ctx.lineJoin = 'round';
-
-          // Restore drawing
-          if (tempCanvas) {
-            ctx.drawImage(tempCanvas, 0, 0, tempCanvas.width, tempCanvas.height, 0, 0, tempCanvas.width / ratio, tempCanvas.height / ratio);
-          }
-        }
-      }
-    };
-
-    resizeCanvas();
-
-    // Slight delay to ensure layout is applied
-    setTimeout(resizeCanvas, 100);
-
-    window.addEventListener('resize', resizeCanvas);
-    return () => window.removeEventListener('resize', resizeCanvas);
-  }, []);
-
-  const getCoordinates = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return { x: 0, y: 0 };
-    const rect = canvas.getBoundingClientRect();
-
-    let clientX, clientY;
-
-    if ('touches' in e) {
-      clientX = e.touches[0].clientX;
-      clientY = e.touches[0].clientY;
-    } else {
-      clientX = (e as React.MouseEvent).clientX;
-      clientY = (e as React.MouseEvent).clientY;
-    }
-
-    return {
-      x: clientX - rect.left,
-      y: clientY - rect.top
-    };
-  };
-
-  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    setIsDrawing(true);
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext('2d');
-    if (!ctx || !canvas) return;
-
-    const { x, y } = getCoordinates(e);
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    // Draw a dot if it's just a click/tap
-    ctx.lineTo(x, y);
-    ctx.stroke();
-  };
-
-  const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return;
-
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext('2d');
-    if (!ctx || !canvas) return;
-
-    const { x, y } = getCoordinates(e);
-    ctx.lineTo(x, y);
-    ctx.stroke();
-  };
-
-  const endDrawing = () => {
-    setIsDrawing(false);
-  };
-
-  const clearSignature = () => {
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext('2d');
-    if (!ctx || !canvas) return;
-
-    ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.restore();
-  };
+  const [value, setValue] = useState('');
 
   return (
     <div className="flex flex-col gap-2">
@@ -425,31 +312,25 @@ function SignatureField({ label }: { label: string }) {
         <label className="text-xs font-bold uppercase tracking-wide text-slate-500">{label}</label>
         <button
           type="button"
-          onClick={clearSignature}
+          onClick={() => setValue('')}
           className="text-[10px] font-bold text-slate-400 hover:text-red-500 transition-colors flex items-center gap-1 bg-slate-100 hover:bg-red-50 px-2.5 py-1 rounded border border-transparent hover:border-red-200"
         >
           <Trash2 className="w-3 h-3" /> Limpar
         </button>
       </div>
-      <div
-        className="w-full bg-slate-50/70 border-2 border-slate-200 border-dashed rounded-xl overflow-hidden relative group"
-        style={{ touchAction: 'none' }} /* Prevents page scroll when drawing on mobile */
-      >
-        <canvas
-          ref={canvasRef}
-          onMouseDown={startDrawing}
-          onMouseMove={draw}
-          onMouseUp={endDrawing}
-          onMouseLeave={endDrawing}
-          onTouchStart={startDrawing}
-          onTouchMove={draw}
-          onTouchEnd={endDrawing}
-          onTouchCancel={endDrawing}
-          className="w-full h-[120px] cursor-crosshair relative z-10"
+      <div className="relative">
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder={`Nome do ${label.toLowerCase()}...`}
+          className="w-full h-[120px] px-4 py-4 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/70 text-slate-800 text-[15px] focus:outline-none focus:border-blue-400 focus:bg-white font-medium placeholder:text-slate-300 placeholder:italic transition-colors"
         />
-        <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-30 group-hover:opacity-10 transition-opacity">
-          <span className="text-slate-400 font-medium italic text-sm">Assine aqui</span>
-        </div>
+        {!value && (
+          <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-25">
+            <span className="text-slate-400 font-medium italic text-sm">Digite o nome aqui</span>
+          </div>
+        )}
       </div>
     </div>
   );
