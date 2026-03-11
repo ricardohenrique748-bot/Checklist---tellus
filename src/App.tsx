@@ -521,11 +521,6 @@ function ChecklistView() {
     Object.values(calibragem).filter(i => i.status !== null).length;
 
   const handleSave = async () => {
-    if (!headerPlaca || !headerResponsavel) {
-      alert('Por favor, identifique o veículo e o responsável!');
-      return;
-    }
-
     const inspectionData = {
       placa: headerPlaca,
       empresa: headerEmpresa,
@@ -732,7 +727,7 @@ Faça login no sistema para ver os detalhes completos.`;
             <div className="col-span-1">
               <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
                 <Building2 className="w-[14px] h-[14px] text-slate-400" />
-                Empresa <span className="text-red-500">*</span>
+                Empresa
               </label>
               <div className="relative">
                 <select
@@ -757,7 +752,7 @@ Faça login no sistema para ver os detalhes completos.`;
             <div className="col-span-1">
               <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
                 <Truck className="w-[14px] h-[14px] text-slate-400" />
-                Placa / Equipamento <span className="text-red-500">*</span>
+                Placa / Equipamento
               </label>
               <div className="relative">
                 <select
@@ -782,7 +777,7 @@ Faça login no sistema para ver os detalhes completos.`;
             <div>
               <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
                 <Calendar className="w-[14px] h-[14px] text-slate-400" />
-                Data <span className="text-red-500">*</span>
+                Data
               </label>
               <input
                 type="date"
@@ -795,7 +790,7 @@ Faça login no sistema para ver os detalhes completos.`;
             <div>
               <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
                 <Clock className="w-[14px] h-[14px] text-slate-400" />
-                Hora <span className="text-red-500">*</span>
+                Hora
               </label>
               <input
                 type="time"
@@ -808,7 +803,7 @@ Faça login no sistema para ver os detalhes completos.`;
             <div>
               <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
                 <Gauge className="w-[14px] h-[14px] text-slate-400" />
-                Quilometragem (KM) <span className="text-red-500">*</span>
+                Quilometragem (KM)
               </label>
               <input
                 type="number"
@@ -822,7 +817,7 @@ Faça login no sistema para ver os detalhes completos.`;
             <div className="col-span-1">
               <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
                 <User className="w-[14px] h-[14px] text-slate-400" />
-                Nome do Responsável <span className="text-red-500">*</span>
+                Nome do Responsável
               </label>
               <div className="relative">
                 <select
