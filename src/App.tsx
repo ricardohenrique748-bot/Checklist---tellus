@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Truck, Calendar, Clock, User, CheckCircle, XCircle, MinusCircle, ChevronUp, ChevronDown, ListChecks, Database, Menu, X, Camera, ImagePlus, Trash2, Users, Key, Save, Droplet, Gauge, ClipboardCheck, BarChart3, Lock, Wrench, Pencil, Sun, Moon, Building2, Share2, ClipboardList } from 'lucide-react';
+import { Truck, Calendar, Clock, User, CheckCircle, XCircle, MinusCircle, ChevronUp, ChevronDown, ListChecks, Database, Menu, X, Camera, ImagePlus, Trash2, Users, Key, Save, Droplet, Gauge, ClipboardCheck, BarChart3, Lock, Wrench, Pencil, Sun, Moon, Building2, Share2, ClipboardList, RefreshCw } from 'lucide-react';
 import { supabase } from './lib/supabase';
 
 const mechanicallyItems = [
@@ -368,15 +368,7 @@ function ChecklistView() {
   const [viewMode, setViewMode] = useState<'nova' | 'historico' | 'visualizar'>('nova');
   const [history, setHistory] = useState<any[]>([]);
 
-  useEffect(() => {
-    async function loadInspecoes() {
-      const { data } = await supabase.from('inspecoes').select('*').order('created_at', { ascending: false });
-      if (data) setHistory(data);
-    }
-    if (viewMode === 'historico') {
-      loadInspecoes();
-    }
-  }, [viewMode]);
+
 
   const [, setSelectedInspection] = useState<any>(null);
 
@@ -386,28 +378,30 @@ function ChecklistView() {
   const [acessosLocal, setAcessosLocal] = useState<any[]>([]);
 
   useEffect(() => {
+    async function loadInitialData() {
+      try {
+        const { data: df } = await supabase.from('frotas').select('placa, modelo, empresa');
+        if (df) setFrotasLocal(df);
+
+        const { data: de } = await supabase.from('empresas').select('nome');
+        if (de) setEmpresasLocal(de);
+
+        const { data: dfunc } = await supabase.from('funcionarios').select('nome');
+        if (dfunc) setFuncionariosLocal(dfunc);
+
+        const { data: dac } = await supabase.from('acessos').select('nome, email');
+        if (dac) setAcessosLocal(dac);
+      } catch (e) {
+        console.error("Erro no carregamento inicial:", e);
+      }
+    }
+
     async function loadInspecoes() {
       const { data } = await supabase.from('inspecoes').select('*').order('created_at', { ascending: false });
       if (data) setHistory(data);
     }
 
-    async function loadOptions() {
-      const { data: df } = await supabase.from('frotas').select('placa, modelo, empresa').order('placa', { ascending: true });
-      if (df) setFrotasLocal(df);
-
-      const { data: de } = await supabase.from('empresas').select('nome').order('nome', { ascending: true });
-      if (de) setEmpresasLocal(de);
-
-      const { data: dfunc } = await supabase.from('funcionarios').select('nome').order('nome', { ascending: true });
-      if (dfunc) setFuncionariosLocal(dfunc);
-
-      const { data: dac } = await supabase.from('acessos').select('nome, email').order('nome', { ascending: true });
-      if (dac) setAcessosLocal(dac);
-    }
-
-    loadOptions();
-
-    // Check query params if we want to open a new inspection directly or wait
+    loadInitialData();
     if (viewMode === 'historico') {
       loadInspecoes();
     }
@@ -514,11 +508,11 @@ function ChecklistView() {
 
   const totalItemsCount = mechanicallyItems.length + electricalItems.length + externalItems.length + lubricationItems.length + calibrationItems.length;
   const totalCompleted =
-    Object.values(mecanica).filter(i => i.status !== null).length +
-    Object.values(eletrica).filter(i => i.status !== null).length +
-    Object.values(externa).filter(i => i.status !== null).length +
-    Object.values(lubrificacao).filter(i => i.status !== null).length +
-    Object.values(calibragem).filter(i => i.status !== null).length;
+    Object.values(mecanica).filter((i: any) => i.status !== null).length +
+    Object.values(eletrica).filter((i: any) => i.status !== null).length +
+    Object.values(externa).filter((i: any) => i.status !== null).length +
+    Object.values(lubrificacao).filter((i: any) => i.status !== null).length +
+    Object.values(calibragem).filter((i: any) => i.status !== null).length;
 
   const handleSave = async () => {
     const inspectionData = {
@@ -628,7 +622,7 @@ Faça login no sistema para ver os detalhes completos.`;
                   </div>
                   <div>
                     <h3 className="font-bold text-slate-800 text-lg">
-                      {item.placa} <span className="text-slate-400 font-medium text-sm uppercase">({frotasLocal.find(f => f.placa === item.placa)?.modelo || 'S/ modelo'})</span>
+                      {item.placa} <span className="text-slate-400 font-medium text-sm uppercase">({(frotasLocal || []).find((f: any) => f.placa === item.placa)?.modelo || 'S/ modelo'})</span>
                     </h3>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm text-slate-500 font-medium">
                       <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {item.data.split('-').reverse().join('/')}</span>
@@ -709,7 +703,7 @@ Faça login no sistema para ver os detalhes completos.`;
       <div className="hidden print:block mb-8 border-b-2 border-slate-800 pb-4">
         <h1 className="text-2xl font-bold text-slate-800">
           RELATÓRIO DE INSPEÇÃO: {headerPlaca}
-          <span className="text-slate-500 font-medium ml-2">({frotasLocal.find(f => f.placa === headerPlaca)?.modelo || ''})</span>
+          <span className="text-slate-500 font-medium ml-2">({frotasLocal.find((f: any) => f.placa === headerPlaca)?.modelo || ''})</span>
         </h1>
         <div className="mt-2 text-sm text-slate-600 flex gap-4">
           <span><strong>Data:</strong> {headerData.split('-').reverse().join('/')}</span>
@@ -763,7 +757,7 @@ Faça login no sistema para ver os detalhes completos.`;
                 >
                   <option value="">{headerEmpresa ? 'Selecione o veículo...' : 'Selecione primeiro a empresa'}</option>
                   {frotasLocal
-                    .filter(f => f.empresa === headerEmpresa)
+                    .filter((f: any) => f.empresa === headerEmpresa)
                     .map((f: any) => (
                       <option key={f.placa} value={f.placa}>{f.placa} ({f.modelo})</option>
                     ))}
@@ -994,33 +988,37 @@ function DatabaseView() {
   const [acessos, setAcessos] = useState<any[]>([]);
   const [empresas, setEmpresas] = useState<any[]>([]);
   const [loadingDados, setLoadingDados] = useState(false);
+  const [loadError, setLoadError] = useState('');
+
+  const loadData = async () => {
+    setLoadingDados(true);
+    setLoadError('');
+    try {
+      const [rFrota, rFunc, rAc, rEmp] = await Promise.all([
+        supabase.from('frotas').select('*').limit(1000),
+        supabase.from('funcionarios').select('*').limit(1000),
+        supabase.from('acessos').select('*').limit(1000),
+        supabase.from('empresas').select('*').limit(1000)
+      ]);
+
+      if (rFrota.error) throw rFrota.error;
+      if (rFunc.error) throw rFunc.error;
+      if (rAc.error) throw rAc.error;
+      if (rEmp.error) throw rEmp.error;
+
+      setFrotas(rFrota.data || []);
+      setFuncionarios(rFunc.data || []);
+      setAcessos(rAc.data || []);
+      setEmpresas(rEmp.data || []);
+    } catch (err: any) {
+      console.error("Erro no carregamento:", err);
+      setLoadError(err.message || "Erro ao conectar com o banco de dados");
+    } finally {
+      setLoadingDados(false);
+    }
+  };
 
   useEffect(() => {
-    async function loadData() {
-      try {
-        setLoadingDados(true);
-
-        const [rFrota, rFunc, rAc, rEmp] = await Promise.all([
-          supabase.from('frotas').select('*').order('created_at', { ascending: false }),
-          supabase.from('funcionarios').select('*').order('created_at', { ascending: false }),
-          supabase.from('acessos').select('*').order('created_at', { ascending: false }),
-          supabase.from('empresas').select('*').order('nome', { ascending: true })
-        ]);
-
-        if (rFrota.data) setFrotas(rFrota.data);
-        if (rFunc.data) setFuncionarios(rFunc.data);
-        if (rAc.data) setAcessos(rAc.data);
-        if (rEmp.data) setEmpresas(rEmp.data);
-
-        if (rFrota.error || rFunc.error || rAc.error || rEmp.error) {
-          console.error("Erro ao carregar dados:", { f: rFrota.error, fu: rFunc.error, a: rAc.error, e: rEmp.error });
-        }
-      } catch (err) {
-        console.error("Erro fatal no carregamento:", err);
-      } finally {
-        setLoadingDados(false);
-      }
-    }
     loadData();
   }, []);
 
@@ -1199,10 +1197,21 @@ function DatabaseView() {
 
   return (
     <div className="max-w-[850px] mx-auto pb-24">
-      <header className="mb-8 pt-2">
-        <h1 className="text-[28px] font-extrabold tracking-tight text-slate-800">Gestão de Cadastros</h1>
-        <p className="text-slate-500 mt-2 font-medium">Cadastre frotas, funcionários e acessos ao sistema.</p>
-        {loadingDados && <p className="text-blue-500 font-bold mt-2 animate-pulse">Carregando dados...</p>}
+      <header className="mb-8 pt-2 flex items-center justify-between">
+        <div>
+          <h1 className="text-[28px] font-extrabold tracking-tight text-slate-800">Gestão de Cadastros</h1>
+          <p className="text-slate-500 mt-2 font-medium">Cadastre frotas, funcionários e acessos ao sistema.</p>
+          {loadingDados && <p className="text-blue-500 font-bold mt-2 animate-pulse flex items-center gap-2"><RefreshCw className="w-4 h-4 animate-spin" /> Carregando dados...</p>}
+          {loadError && <p className="text-red-500 font-bold mt-2 bg-red-50 p-2 rounded-lg border border-red-100 flex items-center gap-2"><XCircle className="w-4 h-4" /> {loadError}</p>}
+        </div>
+        <button
+          onClick={() => loadData()}
+          disabled={loadingDados}
+          className="p-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-all shadow-sm active:scale-95 disabled:opacity-50"
+          title="Recarregar dados"
+        >
+          <RefreshCw className={`w-5 h-5 ${loadingDados ? 'animate-spin' : ''}`} />
+        </button>
       </header>
 
       {/* Tabs para os formulários */}
@@ -1622,7 +1631,7 @@ function DatabaseView() {
           activeForm === 'frotas' && (
             <div className="divide-y divide-slate-100">
               {frotas.length === 0 && <div className="p-6 text-center text-slate-500 font-medium tracking-wide text-sm">Nenhum veículo cadastrado.</div>}
-              {frotas.map(f => (
+              {frotas.map((f: any) => (
                 <div key={f.id} className="p-4 sm:px-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
                   <div>
                     <div className="font-bold text-slate-800">{f.placa} <span className="text-slate-400 font-medium">({f.modelo})</span></div>
@@ -1650,7 +1659,7 @@ function DatabaseView() {
           activeForm === 'empresas' && (
             <div className="divide-y divide-slate-100">
               {empresas.length === 0 && <div className="p-6 text-center text-slate-500 font-medium tracking-wide text-sm">Nenhuma empresa cadastrada.</div>}
-              {empresas.map(f => (
+              {empresas.map((f: any) => (
                 <div key={f.id} className="p-4 sm:px-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
                   <div>
                     <div className="font-bold text-slate-800 uppercase">{f.nome}</div>
@@ -1674,7 +1683,7 @@ function DatabaseView() {
           activeForm === 'funcionarios' && (
             <div className="divide-y divide-slate-100">
               {funcionarios.length === 0 && <div className="p-6 text-center text-slate-500 font-medium tracking-wide text-sm">Nenhum funcionário cadastrado.</div>}
-              {funcionarios.map(f => (
+              {funcionarios.map((f: any) => (
                 <div key={f.id} className="p-4 sm:px-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
                   <div>
                     <div className="font-bold text-slate-800">{f.nome}</div>
@@ -1698,7 +1707,7 @@ function DatabaseView() {
           activeForm === 'logins' && (
             <div className="divide-y divide-slate-100">
               {acessos.length === 0 && <div className="p-6 text-center text-slate-500 font-medium tracking-wide text-sm">Nenhum acesso cadastrado.</div>}
-              {acessos.map(f => (
+              {acessos.map((f: any) => (
                 <div key={f.id} className="p-4 sm:px-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
                   <div>
                     <div className="font-bold text-slate-800">{f.nome || f.email}</div>
@@ -1744,6 +1753,9 @@ function DashboardView({ isPublic = false }: { isPublic?: boolean }) {
         setFrotasList(frotas);
         const empresasUnicas = Array.from(new Set(frotas.map((f: any) => f.empresa).filter(Boolean))) as string[];
         setEmpresasList(empresasUnicas);
+      } else {
+        setFrotasList([]);
+        setEmpresasList([]);
       }
     }
     loadOptions();
@@ -1751,72 +1763,77 @@ function DashboardView({ isPublic = false }: { isPublic?: boolean }) {
 
   useEffect(() => {
     async function fetchData() {
-      setLoading(true);
-      // Frotas
-      let frotasQuery = supabase.from('frotas').select('*');
-      if (filterPlaca) frotasQuery = frotasQuery.eq('placa', filterPlaca);
-      if (filterEmpresa) frotasQuery = frotasQuery.eq('empresa', filterEmpresa);
+      try {
+        setLoading(true);
+        // Frotas
+        let frotasQuery = supabase.from('frotas').select('*');
+        if (filterPlaca) frotasQuery = frotasQuery.eq('placa', filterPlaca);
+        if (filterEmpresa) frotasQuery = frotasQuery.eq('empresa', filterEmpresa);
 
-      const { data: frotasData } = await frotasQuery;
+        const { data: frotasData, error: fError } = await frotasQuery.limit(1000);
+        if (fError) console.error("Erro dashboard frotas:", fError);
 
+        // Preventivas
+        let prevQuery = supabase.from('preventivas').select('*');
+        if (filterPlaca) prevQuery = prevQuery.eq('veiculo', filterPlaca);
+        if (filterStartDate) prevQuery = prevQuery.gte('data', filterStartDate);
+        if (filterEndDate) prevQuery = prevQuery.lte('data', filterEndDate);
 
-
-      // Preventivas
-      let prevQuery = supabase.from('preventivas').select('*');
-      if (filterPlaca) prevQuery = prevQuery.eq('veiculo', filterPlaca);
-      if (filterStartDate) prevQuery = prevQuery.gte('data', filterStartDate);
-      if (filterEndDate) prevQuery = prevQuery.lte('data', filterEndDate);
-
-      if (!filterPlaca && filterEmpresa && frotasData) {
-        const placasDaEmpresa = frotasData.map((f: any) => f.placa);
-        if (placasDaEmpresa.length > 0) {
-          prevQuery = prevQuery.in('veiculo', placasDaEmpresa);
-        } else {
-          prevQuery = prevQuery.in('veiculo', ['NENHUMA_PLACA_VALIDA']);
-        }
-      }
-
-      const { data: prevData } = await prevQuery;
-      let onTime = 0, attention = 0, critical = 0;
-      let truckAttention = 0, implementAttention = 0;
-
-      if (prevData) {
-        prevData.forEach((p: any) => {
-          // Status Caminhão
-          const acumulado = (parseInt(p.atual) || 0) - (parseInt(p.ultima) || 0);
-          const diff = (parseInt(p.intervalo) || 500) - acumulado;
-          if (diff < 20) {
-            critical++;
-            truckAttention++;
-          } else if (diff <= 60) {
-            attention++;
-            truckAttention++;
+        if (!filterPlaca && filterEmpresa && frotasData) {
+          const placasDaEmpresa = frotasData.map((f: any) => f.placa);
+          if (placasDaEmpresa.length > 0) {
+            prevQuery = prevQuery.in('veiculo', placasDaEmpresa);
           } else {
-            onTime++;
+            prevQuery = prevQuery.in('veiculo', ['NENHUMA_PLACA_VALIDA']);
           }
+        }
 
-          // Status Implemento
-          if (p.intervalo_implemento && parseInt(p.intervalo_implemento) > 0) {
-            const acumuladoImp = (parseInt(p.atual_implemento) || 0) - (parseInt(p.ultima_implemento) || 0);
-            const diffImp = (parseInt(p.intervalo_implemento) || 500) - acumuladoImp;
-            if (diffImp < 20) {
+        const { data: prevData, error: pError } = await prevQuery.limit(1000);
+        if (pError) console.error("Erro dashboard preventivas:", pError);
+
+        let onTime = 0, attention = 0, critical = 0;
+        let truckAttention = 0, implementAttention = 0;
+
+        if (prevData) {
+          prevData.forEach((p: any) => {
+            // Status Caminhão
+            const acumulado = (parseInt(p.atual) || 0) - (parseInt(p.ultima) || 0);
+            const diff = (parseInt(p.intervalo) || 500) - acumulado;
+            if (diff < 20) {
               critical++;
-              implementAttention++;
-            } else if (diffImp <= 60) {
+              truckAttention++;
+            } else if (diff <= 60) {
               attention++;
-              implementAttention++;
+              truckAttention++;
             } else {
               onTime++;
             }
-          }
-        });
-        setPreventivasData(prevData);
+
+            // Status Implemento
+            if (p.intervalo_implemento && parseInt(p.intervalo_implemento) > 0) {
+              const acumuladoImp = (parseInt(p.atual_implemento) || 0) - (parseInt(p.ultima_implemento) || 0);
+              const diffImp = (parseInt(p.intervalo_implemento) || 500) - acumuladoImp;
+              if (diffImp < 20) {
+                critical++;
+                implementAttention++;
+              } else if (diffImp <= 60) {
+                attention++;
+                implementAttention++;
+              } else {
+                onTime++;
+              }
+            }
+          });
+          setPreventivasData(prevData);
+        }
+
+        setPreventivaStats({ onTime, attention, critical, truckAttention, implementAttention });
+      } catch (err: any) {
+        console.error("Erro Dashboard:", err);
+      } finally {
+        setLoading(false);
       }
-
-      setPreventivaStats({ onTime, attention, critical, truckAttention, implementAttention });
-      setLoading(false);
     }
-
     fetchData();
   }, [filterStartDate, filterEndDate, filterPlaca, filterEmpresa]);
 
