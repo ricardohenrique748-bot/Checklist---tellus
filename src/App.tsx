@@ -1435,7 +1435,7 @@ function DatabaseView() {
                   <input
                     type="text"
                     value={empresaNome} onChange={e => setEmpresaNome(e.target.value)}
-                    placeholder="Ex: Dellus Transportes"
+                    placeholder="Ex: Frota Transportes"
                     className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium placeholder:text-slate-400 hover:border-slate-300 transition-colors shadow-sm"
                   />
                 </div>
@@ -1580,7 +1580,7 @@ function DatabaseView() {
                   <input
                     type="text"
                     value={acessoNome} onChange={e => setAcessoNome(e.target.value)}
-                    placeholder="Ex: Administrativo Dellus"
+                    placeholder="Ex: Administrativo"
                     className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/30 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium placeholder:text-slate-400 hover:border-slate-300 transition-colors shadow-sm"
                   />
                 </div>
