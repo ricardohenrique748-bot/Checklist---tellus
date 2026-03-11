@@ -1759,7 +1759,6 @@ function DatabaseView() {
 }
 
 function DashboardView({ isPublic = false }: { isPublic?: boolean }) {
-  const [stats, setStats] = useState({ inspections: 0, nonConformities: 0, activeFrotas: 0 });
   const [preventivaStats, setPreventivaStats] = useState({ onTime: 0, attention: 0, critical: 0, truckAttention: 0, implementAttention: 0 });
   const [preventivasData, setPreventivasData] = useState<any[]>([]);
 
