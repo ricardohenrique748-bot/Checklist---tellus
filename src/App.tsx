@@ -3062,6 +3062,7 @@ function OSView() {
   const [osList, setOsList] = useState<any[]>([]);
   const [frotasDisponiveis, setFrotasDisponiveis] = useState<any[]>([]);
   const [empresasList, setEmpresasList] = useState<string[]>([]);
+  const [funcionariosList, setFuncionariosList] = useState<any[]>([]);
 
   useEffect(() => {
     async function loadData() {
@@ -3074,6 +3075,9 @@ function OSView() {
 
       const { data: dos } = await supabase.from('ordens_servico').select('*').order('created_at', { ascending: false });
       if (dos) setOsList(dos);
+
+      const { data: dfun } = await supabase.from('funcionarios').select('id, nome, cargo').order('nome', { ascending: true });
+      if (dfun) setFuncionariosList(dfun);
     }
     loadData();
   }, []);
@@ -3288,15 +3292,29 @@ function OSView() {
               <div className="relative">
                 <select
                   value={placa}
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     const selPlaca = e.target.value;
                     setPlaca(selPlaca);
                     const frota = frotasDisponiveis.find(f => f.placa === selPlaca);
                     if (frota) {
-                      setKm(frota.km || '');
-                      setHorimetro(frota.horimetro || '');
                       if (!empresaOS && frota.empresa) {
                         setEmpresaOS(frota.empresa);
+                      }
+                      // Busca último KM e Horímetro registrado nas OS para essa placa
+                      const { data: ultimaOS } = await supabase
+                        .from('ordens_servico')
+                        .select('km, horimetro')
+                        .eq('placa', selPlaca)
+                        .not('km', 'is', null)
+                        .order('created_at', { ascending: false })
+                        .limit(1);
+                      if (ultimaOS && ultimaOS.length > 0) {
+                        setKm(ultimaOS[0].km || '');
+                        setHorimetro(ultimaOS[0].horimetro || '');
+                      } else {
+                        // Fallback: usa o km da tabela frotas se não houver OS anterior
+                        setKm(frota.km || '');
+                        setHorimetro('');
                       }
                     } else {
                       setKm('');
@@ -3515,13 +3533,31 @@ function OSView() {
             <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
               Mecânico
             </label>
-            <input
-              type="text"
-              value={mecanico}
-              onChange={(e) => setMecanico(e.target.value)}
-              placeholder="Nome do mecânico"
-              className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold shadow-sm"
-            />
+            <div className="relative">
+              <select
+                value={mecanico}
+                onChange={(e) => setMecanico(e.target.value)}
+                className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold appearance-none shadow-sm"
+              >
+                <option value="">Selecione o mecânico...</option>
+                {funcionariosList
+                  .filter(f => f.cargo === 'mecanico' || f.cargo === 'Mecânico')
+                  .map((f: any) => (
+                    <option key={f.id} value={f.nome}>{f.nome}</option>
+                  ))}
+                {/* Fallback pattern in case there are no specific mechanics or to allow others */}
+                <optgroup label="Outros Funcionários">
+                  {funcionariosList
+                    .filter(f => f.cargo !== 'mecanico' && f.cargo !== 'Mecânico')
+                    .map((f: any) => (
+                      <option key={f.id} value={f.nome}>{f.nome} ({f.cargo})</option>
+                    ))}
+                </optgroup>
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                <ChevronDown className="w-4 h-4" />
+              </div>
+            </div>
           </div>
 
           {/* Observações */}
