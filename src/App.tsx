@@ -381,6 +381,7 @@ function ChecklistView() {
   const [, setSelectedInspection] = useState<any>(null);
 
   const [frotasLocal, setFrotasLocal] = useState<any[]>([]);
+  const [empresasLocal, setEmpresasLocal] = useState<any[]>([]);
   const [funcionariosLocal, setFuncionariosLocal] = useState<any[]>([]);
   const [acessosLocal, setAcessosLocal] = useState<any[]>([]);
 
@@ -391,8 +392,11 @@ function ChecklistView() {
     }
 
     async function loadOptions() {
-      const { data: df } = await supabase.from('frotas').select('placa, modelo').order('placa', { ascending: true });
+      const { data: df } = await supabase.from('frotas').select('placa, modelo, empresa').order('placa', { ascending: true });
       if (df) setFrotasLocal(df);
+
+      const { data: de } = await supabase.from('empresas').select('nome').order('nome', { ascending: true });
+      if (de) setEmpresasLocal(de);
 
       const { data: dfunc } = await supabase.from('funcionarios').select('nome').order('nome', { ascending: true });
       if (dfunc) setFuncionariosLocal(dfunc);
@@ -411,6 +415,7 @@ function ChecklistView() {
 
   const [inspectionTab, setInspectionTab] = useState<'checklist' | 'lubrificacao' | 'calibragem'>('checklist');
 
+  const [headerEmpresa, setHeaderEmpresa] = useState('');
   const [headerPlaca, setHeaderPlaca] = useState('');
   const [headerResponsavel, setHeaderResponsavel] = useState(() => localStorage.getItem('tellus_user_name') || '');
   const [headerData, setHeaderData] = useState(() => new Date().toISOString().split('T')[0]);
@@ -523,6 +528,7 @@ function ChecklistView() {
 
     const inspectionData = {
       placa: headerPlaca,
+      empresa: headerEmpresa,
       responsavel: headerResponsavel,
       data: headerData,
       hora: headerHora,
@@ -542,6 +548,7 @@ function ChecklistView() {
       setHistory(newHistory);
 
       // Clear forms
+      setHeaderEmpresa('');
       setHeaderPlaca('');
       setHeaderKM('');
       setMecanica({}); setEletrica({}); setExterna({}); setLubrificacao({}); setCalibragem({});
@@ -579,6 +586,7 @@ Faça login no sistema para ver os detalhes completos.`;
     // É apenas para exibir... Mas podemos só usar o rendered do Checklist normal "desativado"
     setHeaderData(inspeccao.data);
     setHeaderHora(inspeccao.hora);
+    setHeaderEmpresa(inspeccao.empresa || '');
     setHeaderKM(inspeccao.km || '');
     setMecanica(inspeccao.mecanica || {});
     setEletrica(inspeccao.eletrica || {});
@@ -592,6 +600,7 @@ Faça login no sistema para ver os detalhes completos.`;
     setViewMode('historico');
     // Clear states 
     setHeaderHora(new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
+    setHeaderEmpresa('');
     setHeaderKM('');
     setMecanica({}); setEletrica({}); setExterna({}); setLubrificacao({}); setCalibragem({});
   }
@@ -717,10 +726,35 @@ Faça login no sistema para ver os detalhes completos.`;
       <form className="space-y-8" onSubmit={(e) => e.preventDefault()}>
         {/* Identificação */}
         <div className="bg-white rounded-xl shadow-[0_2px_12px_rgb(0,0,0,0.03)] border border-slate-200 mb-8 p-6 sm:p-8">
-          <h2 className="text-sm font-extrabold text-slate-400 tracking-wider mb-6">IDENTIFICAÇÃO</h2>
+          <h2 className="text-sm font-extrabold text-slate-400 tracking-wider mb-6 uppercase">Identificação</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-7">
-            <div className="col-span-1 md:col-span-2">
+            <div className="col-span-1">
+              <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                <Building2 className="w-[14px] h-[14px] text-slate-400" />
+                Empresa <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <select
+                  value={headerEmpresa}
+                  onChange={(e) => {
+                    setHeaderEmpresa(e.target.value);
+                    setHeaderPlaca(''); // Reseta placa ao mudar empresa
+                  }}
+                  className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium appearance-none hover:border-slate-300 transition-colors shadow-sm"
+                >
+                  <option value="">Selecione a empresa...</option>
+                  {empresasLocal.map((e: any) => (
+                    <option key={e.nome} value={e.nome}>{e.nome}</option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                  <ChevronDown className="w-4 h-4" />
+                </div>
+              </div>
+            </div>
+
+            <div className="col-span-1">
               <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
                 <Truck className="w-[14px] h-[14px] text-slate-400" />
                 Placa / Equipamento <span className="text-red-500">*</span>
@@ -729,12 +763,15 @@ Faça login no sistema para ver os detalhes completos.`;
                 <select
                   value={headerPlaca}
                   onChange={(e) => setHeaderPlaca(e.target.value)}
-                  className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium appearance-none hover:border-slate-300 transition-colors shadow-sm"
+                  disabled={!headerEmpresa}
+                  className={`w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium appearance-none hover:border-slate-300 transition-colors shadow-sm ${!headerEmpresa ? 'opacity-50 cursor-not-allowed bg-slate-50' : ''}`}
                 >
-                  <option value="">Selecione o veículo...</option>
-                  {frotasLocal.map((f: any) => (
-                    <option key={f.placa} value={f.placa}>{f.placa} ({f.modelo})</option>
-                  ))}
+                  <option value="">{headerEmpresa ? 'Selecione o veículo...' : 'Selecione primeiro a empresa'}</option>
+                  {frotasLocal
+                    .filter(f => f.empresa === headerEmpresa)
+                    .map((f: any) => (
+                      <option key={f.placa} value={f.placa}>{f.placa} ({f.modelo})</option>
+                    ))}
                 </select>
                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
                   <ChevronDown className="w-4 h-4" />
@@ -782,7 +819,7 @@ Faça login no sistema para ver os detalhes completos.`;
               />
             </div>
 
-            <div className="col-span-1 md:col-span-1">
+            <div className="col-span-1">
               <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
                 <User className="w-[14px] h-[14px] text-slate-400" />
                 Nome do Responsável <span className="text-red-500">*</span>
@@ -845,72 +882,78 @@ Faça login no sistema para ver os detalhes completos.`;
 
         {/* Listas */}
 
-        {inspectionTab === 'checklist' && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <Section
-              title="ITENS DE VERIFICAÇÃO MECÂNICA"
-              items={mechanicallyItems}
-              state={mecanica}
-              colorClass="bg-green-600"
-              onUpdateStatus={handleUpdateStatus(setMecanica)}
-              onAddPhotos={handleAddPhotos(setMecanica)}
-              onRemovePhoto={handleRemovePhoto(setMecanica)}
-              onUpdateNote={handleUpdateNote(setMecanica)}
-            />
-            <Section
-              title="ITENS ELÉTRICOS"
-              items={electricalItems}
-              state={eletrica}
-              colorClass="bg-red-500"
-              onUpdateStatus={handleUpdateStatus(setEletrica)}
-              onAddPhotos={handleAddPhotos(setEletrica)}
-              onRemovePhoto={handleRemovePhoto(setEletrica)}
-              onUpdateNote={handleUpdateNote(setEletrica)}
-            />
-            <Section
-              title="PARTE EXTERNA / SEGURANÇA"
-              items={externalItems}
-              state={externa}
-              colorClass="bg-blue-500"
-              onUpdateStatus={handleUpdateStatus(setExterna)}
-              onAddPhotos={handleAddPhotos(setExterna)}
-              onRemovePhoto={handleRemovePhoto(setExterna)}
-              onUpdateNote={handleUpdateNote(setExterna)}
-            />
-          </div>
-        )}
+        {
+          inspectionTab === 'checklist' && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <Section
+                title="ITENS DE VERIFICAÇÃO MECÂNICA"
+                items={mechanicallyItems}
+                state={mecanica}
+                colorClass="bg-green-600"
+                onUpdateStatus={handleUpdateStatus(setMecanica)}
+                onAddPhotos={handleAddPhotos(setMecanica)}
+                onRemovePhoto={handleRemovePhoto(setMecanica)}
+                onUpdateNote={handleUpdateNote(setMecanica)}
+              />
+              <Section
+                title="ITENS ELÉTRICOS"
+                items={electricalItems}
+                state={eletrica}
+                colorClass="bg-red-500"
+                onUpdateStatus={handleUpdateStatus(setEletrica)}
+                onAddPhotos={handleAddPhotos(setEletrica)}
+                onRemovePhoto={handleRemovePhoto(setEletrica)}
+                onUpdateNote={handleUpdateNote(setEletrica)}
+              />
+              <Section
+                title="PARTE EXTERNA / SEGURANÇA"
+                items={externalItems}
+                state={externa}
+                colorClass="bg-blue-500"
+                onUpdateStatus={handleUpdateStatus(setExterna)}
+                onAddPhotos={handleAddPhotos(setExterna)}
+                onRemovePhoto={handleRemovePhoto(setExterna)}
+                onUpdateNote={handleUpdateNote(setExterna)}
+              />
+            </div>
+          )
+        }
 
-        {inspectionTab === 'lubrificacao' && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <Section
-              title="ITENS DE LUBRIFICAÇÃO"
-              items={lubricationItems}
-              state={lubrificacao}
-              colorClass="bg-amber-500"
-              onUpdateStatus={handleUpdateStatus(setLubrificacao)}
-              onAddPhotos={handleAddPhotos(setLubrificacao)}
-              onRemovePhoto={handleRemovePhoto(setLubrificacao)}
-              onUpdateNote={handleUpdateNote(setLubrificacao)}
-            />
-          </div>
-        )}
+        {
+          inspectionTab === 'lubrificacao' && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <Section
+                title="ITENS DE LUBRIFICAÇÃO"
+                items={lubricationItems}
+                state={lubrificacao}
+                colorClass="bg-amber-500"
+                onUpdateStatus={handleUpdateStatus(setLubrificacao)}
+                onAddPhotos={handleAddPhotos(setLubrificacao)}
+                onRemovePhoto={handleRemovePhoto(setLubrificacao)}
+                onUpdateNote={handleUpdateNote(setLubrificacao)}
+              />
+            </div>
+          )
+        }
 
-        {inspectionTab === 'calibragem' && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <Section
-              title="ITENS DE CALIBRAGEM"
-              items={calibrationItems}
-              state={calibragem}
-              colorClass="bg-cyan-500"
-              onUpdateStatus={handleUpdateStatus(setCalibragem)}
-              onAddPhotos={handleAddPhotos(setCalibragem)}
-              onRemovePhoto={handleRemovePhoto(setCalibragem)}
-              onUpdateNote={handleUpdateNote(setCalibragem)}
-              onUpdatePressure={handleUpdatePressure(setCalibragem)}
-              isCalibration={true}
-            />
-          </div>
-        )}
+        {
+          inspectionTab === 'calibragem' && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <Section
+                title="ITENS DE CALIBRAGEM"
+                items={calibrationItems}
+                state={calibragem}
+                colorClass="bg-cyan-500"
+                onUpdateStatus={handleUpdateStatus(setCalibragem)}
+                onAddPhotos={handleAddPhotos(setCalibragem)}
+                onRemovePhoto={handleRemovePhoto(setCalibragem)}
+                onUpdateNote={handleUpdateNote(setCalibragem)}
+                onUpdatePressure={handleUpdatePressure(setCalibragem)}
+                isCalibration={true}
+              />
+            </div>
+          )
+        }
 
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 mt-10">
           <div className="flex items-center gap-3 mb-8">
@@ -930,19 +973,21 @@ Faça login no sistema para ver os detalhes completos.`;
           </div>
         </div>
 
-        {viewMode === 'nova' && (
-          <div className="pt-8 flex justify-end print:hidden pointer-events-auto">
-            <button
-              type="button"
-              onClick={handleSave}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-extrabold px-8 py-3.5 rounded-xl shadow-md active:scale-[0.98] transition-all text-[15px] uppercase tracking-wide w-full sm:w-auto"
-            >
-              Salvar Checklist
-            </button>
-          </div>
-        )}
-      </form>
-    </div>
+        {
+          viewMode === 'nova' && (
+            <div className="pt-8 flex justify-end print:hidden pointer-events-auto">
+              <button
+                type="button"
+                onClick={handleSave}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-extrabold px-8 py-3.5 rounded-xl shadow-md active:scale-[0.98] transition-all text-[15px] uppercase tracking-wide w-full sm:w-auto"
+              >
+                Salvar Checklist
+              </button>
+            </div>
+          )
+        }
+      </form >
+    </div >
   );
 }
 
