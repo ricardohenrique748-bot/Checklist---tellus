@@ -2964,7 +2964,10 @@ function OSView() {
   const [mecanico, setMecanico] = useState('');
   const [observacoes, setObservacoes] = useState('');
   const [status, setStatus] = useState('Aberta');
+  const [empresaOS, setEmpresaOS] = useState('');
   const [placa, setPlaca] = useState('');
+  const [km, setKm] = useState('');
+  const [horimetro, setHorimetro] = useState('');
   const [descricao, setDescricao] = useState('');
 
   // Fotos
@@ -2974,11 +2977,16 @@ function OSView() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [osList, setOsList] = useState<any[]>([]);
   const [frotasDisponiveis, setFrotasDisponiveis] = useState<any[]>([]);
+  const [empresasList, setEmpresasList] = useState<string[]>([]);
 
   useEffect(() => {
     async function loadData() {
       const { data: df } = await supabase.from('frotas').select('*').order('placa', { ascending: true });
-      if (df) setFrotasDisponiveis(df);
+      if (df) {
+        setFrotasDisponiveis(df);
+        const empresasUnicas = Array.from(new Set(df.map((f: any) => f.empresa).filter(Boolean))) as string[];
+        setEmpresasList(empresasUnicas);
+      }
 
       const { data: dos } = await supabase.from('ordens_servico').select('*').order('created_at', { ascending: false });
       if (dos) setOsList(dos);
@@ -2996,7 +3004,10 @@ function OSView() {
     setMecanico('');
     setObservacoes('');
     setStatus('Aberta');
+    setEmpresaOS('');
     setPlaca('');
+    setKm('');
+    setHorimetro('');
     setDescricao('');
     setFotosProblema([]);
     setFotosResolvido([]);
@@ -3012,7 +3023,10 @@ function OSView() {
 
     try {
       const osData = {
+        empresa: empresaOS || null,
         placa,
+        km: km || null,
+        horimetro: horimetro || null,
         tipo_os: tipoOS,
         status,
         data_abertura: dataAbertura,
@@ -3057,7 +3071,10 @@ function OSView() {
 
   const startEdit = (o: any) => {
     setEditingId(o.id);
+    setEmpresaOS(o.empresa || '');
     setPlaca(o.placa || '');
+    setKm(o.km || '');
+    setHorimetro(o.horimetro || '');
     setTipoOS(o.tipo_os || 'Corretiva');
     setStatus(o.status || 'Aberta');
     setDataAbertura(o.data_abertura || currentDate);
@@ -3152,25 +3169,96 @@ function OSView() {
 
         <div className="space-y-6">
 
-          {/* Placa */}
-          <div>
-            <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
-              Placa <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <select
-                value={placa}
-                onChange={(e) => setPlaca(e.target.value)}
-                className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold appearance-none shadow-sm"
-              >
-                <option value="">Selecione a placa</option>
-                {frotasDisponiveis.map((f: any) => (
-                  <option key={f.placa} value={f.placa}>{f.placa} ({f.modelo})</option>
-                ))}
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
-                <ChevronDown className="w-4 h-4" />
+          {/* Empresa and Placa */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                Empresa
+              </label>
+              <div className="relative">
+                <select
+                  value={empresaOS}
+                  onChange={(e) => {
+                    setEmpresaOS(e.target.value);
+                    setPlaca('');
+                    setKm('');
+                    setHorimetro('');
+                  }}
+                  className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold appearance-none shadow-sm"
+                >
+                  <option value="">Todas as empresas</option>
+                  {empresasList.map((emp) => (
+                    <option key={emp} value={emp}>{emp}</option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                  <ChevronDown className="w-4 h-4" />
+                </div>
               </div>
+            </div>
+
+            <div>
+              <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                Placa <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <select
+                  value={placa}
+                  onChange={(e) => {
+                    const selPlaca = e.target.value;
+                    setPlaca(selPlaca);
+                    const frota = frotasDisponiveis.find(f => f.placa === selPlaca);
+                    if (frota) {
+                      setKm(frota.km || '');
+                      setHorimetro(frota.horimetro || '');
+                      if (!empresaOS && frota.empresa) {
+                        setEmpresaOS(frota.empresa);
+                      }
+                    } else {
+                      setKm('');
+                      setHorimetro('');
+                    }
+                  }}
+                  className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold appearance-none shadow-sm"
+                >
+                  <option value="">Selecione a placa</option>
+                  {frotasDisponiveis
+                    .filter(f => !empresaOS || f.empresa === empresaOS)
+                    .map((f: any) => (
+                      <option key={f.placa} value={f.placa}>{f.placa} ({f.modelo})</option>
+                    ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                  <ChevronDown className="w-4 h-4" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                KM Atual
+              </label>
+              <input
+                type="number"
+                value={km}
+                onChange={(e) => setKm(e.target.value)}
+                placeholder="Ex: 150000"
+                className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold shadow-sm"
+              />
+            </div>
+            <div>
+              <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                Horímetro Atual
+              </label>
+              <input
+                type="number"
+                value={horimetro}
+                onChange={(e) => setHorimetro(e.target.value)}
+                placeholder="Ex: 5000"
+                className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold shadow-sm"
+              />
             </div>
           </div>
 
