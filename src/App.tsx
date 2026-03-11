@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Truck, Calendar, Clock, User, CheckCircle, XCircle, MinusCircle, ChevronUp, ChevronDown, ListChecks, Database, Menu, X, Camera, ImagePlus, Trash2, Users, Key, Save, Droplet, Gauge, ClipboardCheck, BarChart3, Lock, Wrench, Pencil, Sun, Moon, Building2, Share2 } from 'lucide-react';
+import { Truck, Calendar, Clock, User, CheckCircle, XCircle, MinusCircle, ChevronUp, ChevronDown, ListChecks, Database, Menu, X, Camera, ImagePlus, Trash2, Users, Key, Save, Droplet, Gauge, ClipboardCheck, BarChart3, Lock, Wrench, Pencil, Sun, Moon, Building2, Share2, ClipboardList } from 'lucide-react';
 import { supabase } from './lib/supabase';
 
 const mechanicallyItems = [
@@ -3013,7 +3013,292 @@ function PreventivaView() {
   );
 }
 
-type Tab = 'dashboard' | 'checklist' | 'preventiva' | 'database';
+function OSView() {
+  const currentDate = new Date().toISOString().split('T')[0];
+  const [dataCriacao, setDataCriacao] = useState(currentDate);
+  const [dataFechamento, setDataFechamento] = useState('');
+  const [status, setStatus] = useState('aberta');
+  const [placa, setPlaca] = useState('');
+  const [descricao, setDescricao] = useState('');
+  
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [osList, setOsList] = useState<any[]>([]);
+  const [frotasDisponiveis, setFrotasDisponiveis] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function loadData() {
+      const { data: df } = await supabase.from('frotas').select('*').order('placa', { ascending: true });
+      if (df) setFrotasDisponiveis(df);
+
+      const { data: dos } = await supabase.from('ordens_servico').select('*').order('created_at', { ascending: false });
+      if (dos) setOsList(dos);
+    }
+    loadData();
+  }, []);
+
+  const clearForm = () => {
+    setDataCriacao(currentDate);
+    setDataFechamento('');
+    setStatus('aberta');
+    setPlaca('');
+    setDescricao('');
+    setEditingId(null);
+  };
+
+  const handleSaveOS = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!placa || !descricao) {
+      alert('Preencha os campos obrigatórios (Placa e Descrição)!');
+      return;
+    }
+
+    try {
+      const osData = {
+        data_criacao: dataCriacao,
+        data_fechamento: dataFechamento || null,
+        status,
+        placa,
+        descricao,
+      };
+
+      if (editingId) {
+        const { data, error } = await supabase.from('ordens_servico').update(osData).eq('id', editingId).select();
+        if (error) throw error;
+        if (data) setOsList(osList.map(o => o.id === editingId ? data[0] : o));
+        alert('OS atualizada com sucesso!');
+      } else {
+        const { data, error } = await supabase.from('ordens_servico').insert([osData]).select();
+        if (error) throw error;
+        if (data) setOsList([data[0], ...osList]);
+        alert('OS criada com sucesso!');
+      }
+      clearForm();
+    } catch (e: any) {
+      alert('Erro ao salvar no banco de dados. ' + e.message);
+    }
+  };
+
+  const startEdit = (o: any) => {
+    setEditingId(o.id);
+    setDataCriacao(o.data_criacao || currentDate);
+    setDataFechamento(o.data_fechamento || '');
+    setStatus(o.status || 'aberta');
+    setPlaca(o.placa || '');
+    setDescricao(o.descricao || '');
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  };
+
+  const deleteOS = async (id: number) => {
+    if (!window.confirm('Excluir esta OS?')) return;
+    try {
+      const { error } = await supabase.from('ordens_servico').delete().eq('id', id);
+      if (error) throw error;
+      setOsList(osList.filter(o => o.id !== id));
+    } catch (e: any) {
+      alert('Erro ao deletar: ' + e.message);
+    }
+  };
+
+  return (
+    <div className="max-w-[850px] mx-auto pb-24">
+      <header className="mb-6 pt-2">
+        <h1 className="text-[28px] font-extrabold tracking-tight text-slate-800">Controle de OS</h1>
+        <p className="text-slate-500 mt-2 font-medium">Gestão de Ordens de Serviço (Abertura, Acompanhamento e Fechamento).</p>
+      </header>
+
+      <form className="bg-white rounded-2xl shadow-[0_2px_12px_rgb(0,0,0,0.03)] border border-slate-200 p-6 sm:p-8 mb-8" onSubmit={handleSaveOS}>
+        <div className="flex items-center gap-3 mb-8 pb-4 border-b border-slate-50">
+          <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
+            <ClipboardList className="w-5 h-5 text-blue-600" />
+          </div>
+          <h2 className="text-lg font-extrabold text-slate-800 tracking-wide uppercase">
+            {editingId ? `Editar OS #${editingId}` : 'Nova Ordem de Serviço'}
+          </h2>
+        </div>
+
+        {editingId && (
+          <div className="mb-8 p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-200">
+                <Pencil className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <div className="text-blue-900 text-[14px] font-black uppercase tracking-tight">Modo de Edição Ativo</div>
+                <div className="text-blue-600/70 text-[11px] font-bold uppercase tracking-wider">Alterando OS selecionada</div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={clearForm}
+              className="px-4 py-2 bg-white border border-blue-200 text-blue-600 text-[11px] font-black uppercase rounded-xl hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all shadow-sm"
+            >
+              Cancelar Edição
+            </button>
+          </div>
+        )}
+
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+             <div>
+                <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                  Data de Criação <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={dataCriacao}
+                  onChange={(e) => setDataCriacao(e.target.value)}
+                  className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold shadow-sm"
+                  style={{ colorScheme: 'light' }}
+                />
+             </div>
+             <div>
+                <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                  Data de Fechamento
+                </label>
+                <input
+                  type="date"
+                  value={dataFechamento}
+                  onChange={(e) => setDataFechamento(e.target.value)}
+                  className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold shadow-sm"
+                  style={{ colorScheme: 'light' }}
+                />
+             </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                Placa do Veículo <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <select
+                  value={placa}
+                  onChange={(e) => setPlaca(e.target.value)}
+                  className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold appearance-none shadow-sm"
+                >
+                  <option value="">Selecione a placa...</option>
+                  {frotasDisponiveis.map((f: any) => (
+                    <option key={f.placa} value={f.placa}>{f.placa} ({f.modelo})</option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                  <ChevronDown className="w-4 h-4" />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                Status <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold appearance-none shadow-sm"
+                >
+                  <option value="aberta">Aberta</option>
+                  <option value="em andamento">Em Andamento</option>
+                  <option value="fechada">Fechada</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                  <ChevronDown className="w-4 h-4" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+              Descrição do Serviço <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              required
+              rows={4}
+              value={descricao}
+              onChange={(e) => setDescricao(e.target.value)}
+              placeholder="Descreva os serviços a serem realizados ou problemas relatados..."
+              className="w-full p-4 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm resize-none"
+            />
+          </div>
+          
+          <div className="h-px bg-slate-100 my-4"></div>
+          
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={clearForm}
+              className="px-6 py-3.5 rounded-xl border-2 border-slate-200 text-slate-500 font-bold text-sm uppercase tracking-wide hover:bg-slate-50 transition-colors"
+            >
+              {editingId ? 'Cancelar Edição' : 'Limpar'}
+            </button>
+            <button
+              type="submit"
+              className={`px-8 py-3.5 rounded-xl border-2 text-white font-extrabold text-sm uppercase tracking-wide shadow-md flex items-center gap-2 ${editingId ? 'bg-blue-600 border-blue-600 hover:bg-blue-700' : 'bg-green-600 border-green-600 hover:bg-green-700'}`}
+            >
+              <Save className="w-[18px] h-[18px]" />
+              {editingId ? 'Atualizar OS' : 'Salvar OS'}
+            </button>
+          </div>
+        </div>
+      </form>
+
+      {/* Listagem de OS */}
+      <div className="bg-white rounded-2xl shadow-[0_2px_12px_rgb(0,0,0,0.03)] border border-slate-200 overflow-hidden">
+        <div className="p-6 border-b border-slate-200 bg-slate-50/50">
+          <h2 className="text-lg font-extrabold text-slate-800 tracking-wide uppercase">Ordens de Serviço (OS)</h2>
+        </div>
+        <div className="divide-y divide-slate-100">
+          {osList.length === 0 && (
+            <div className="p-10 text-center text-slate-500 font-medium tracking-wide text-sm">Nenhuma OS cadastrada.</div>
+          )}
+          {osList.map(o => {
+            let statusColor = 'text-slate-500 bg-slate-100';
+            if (o.status === 'aberta') statusColor = 'text-red-600 bg-red-50';
+            if (o.status === 'em andamento') statusColor = 'text-amber-600 bg-amber-50';
+            if (o.status === 'fechada') statusColor = 'text-emerald-600 bg-emerald-50';
+
+            return (
+              <div key={o.id} className="p-5 sm:px-8 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3">
+                    <span className="font-extrabold text-slate-800 text-lg">OS#{o.id}</span>
+                    <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${statusColor}`}>
+                      {o.status}
+                    </span>
+                  </div>
+                  <div className="text-[13px] font-bold text-slate-600 mt-1 uppercase">Placa: {o.placa}</div>
+                  <div className="text-[12px] text-slate-500 mt-1 line-clamp-1">{o.descricao}</div>
+                  <div className="flex gap-4 mt-2">
+                    <div className="text-[11px] font-bold text-slate-400 uppercase">
+                      Criada em: <span className="text-slate-600">{o.data_criacao ? new Date(o.data_criacao + 'T00:00:00').toLocaleDateString('pt-BR') : '-'}</span>
+                    </div>
+                    {o.data_fechamento && (
+                      <div className="text-[11px] font-bold text-slate-400 uppercase">
+                        Fechamento: <span className="text-slate-600">{new Date(o.data_fechamento + 'T00:00:00').toLocaleDateString('pt-BR')}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center border-l border-slate-100 ml-4 pl-4">
+                  <button onClick={() => startEdit(o)} className="text-slate-400 hover:text-blue-600 p-2.5 transition-all hover:scale-110" title="Editar">
+                    <Pencil className="w-5 h-5" />
+                  </button>
+                  <button onClick={() => deleteOS(o.id)} className="text-slate-400 hover:text-red-600 p-2.5 transition-all hover:scale-110" title="Excluir">
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type Tab = 'dashboard' | 'checklist' | 'preventiva' | 'database' | 'os';
 
 export default function App() {
   const [isPublicView] = useState(() => {
@@ -3140,6 +3425,17 @@ export default function App() {
             BANCO DE DADOS
           </button>
 
+          <button
+            onClick={() => { setActiveTab('os'); setIsMobileMenuOpen(false); }}
+            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'os'
+              ? 'bg-blue-600/10 text-blue-500'
+              : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+              }`}
+          >
+            <ClipboardList className="w-[18px] h-[18px]" />
+            CONTROLE DE OS
+          </button>
+
         </nav>
 
         <div className="p-4 border-t border-[#1e293b] mt-auto">
@@ -3187,6 +3483,7 @@ export default function App() {
         {activeTab === 'checklist' && <ChecklistView />}
         {activeTab === 'preventiva' && <PreventivaView />}
         {activeTab === 'database' && <DatabaseView />}
+        {activeTab === 'os' && <OSView />}
       </main>
     </div>
   );
