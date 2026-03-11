@@ -303,33 +303,61 @@ function ItemRow({
   )
 }
 
-function SignatureField({ label }: { label: string }) {
+function SignatureField({ label, icon }: { label: string; icon?: string }) {
   const [value, setValue] = useState('');
+  const [focused, setFocused] = useState(false);
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between">
-        <label className="text-xs font-bold uppercase tracking-wide text-slate-500">{label}</label>
-        <button
-          type="button"
-          onClick={() => setValue('')}
-          className="text-[10px] font-bold text-slate-400 hover:text-red-500 transition-colors flex items-center gap-1 bg-slate-100 hover:bg-red-50 px-2.5 py-1 rounded border border-transparent hover:border-red-200"
-        >
-          <Trash2 className="w-3 h-3" /> Limpar
-        </button>
+    <div className={`relative flex flex-col rounded-2xl border transition-all duration-200 overflow-hidden ${focused
+        ? 'border-blue-400 shadow-[0_0_0_3px_rgba(59,130,246,0.12)] bg-white'
+        : value
+          ? 'border-slate-200 bg-white shadow-sm'
+          : 'border-dashed border-slate-200 bg-slate-50/60'
+      }`}>
+      {/* Header */}
+      <div className={`flex items-center justify-between px-4 pt-4 pb-2 border-b ${focused ? 'border-blue-100' : 'border-slate-100'
+        }`}>
+        <div className="flex items-center gap-2">
+          <div className={`w-6 h-6 rounded-full flex items-center justify-center ${value ? 'bg-blue-100' : 'bg-slate-100'
+            }`}>
+            <User className={`w-3.5 h-3.5 ${value ? 'text-blue-600' : 'text-slate-400'}`} />
+          </div>
+          <span className={`text-[11px] font-black uppercase tracking-widest ${value ? 'text-slate-600' : 'text-slate-400'
+            }`}>{label}</span>
+        </div>
+        {value && (
+          <button
+            type="button"
+            onClick={() => setValue('')}
+            className="text-[10px] font-bold text-slate-300 hover:text-red-400 transition-colors flex items-center gap-1 hover:bg-red-50 px-2 py-0.5 rounded-lg"
+          >
+            <Trash2 className="w-3 h-3" /> Limpar
+          </button>
+        )}
       </div>
-      <div className="relative">
+
+      {/* Input Area */}
+      <div className="relative px-4 py-3">
         <input
           type="text"
           value={value}
           onChange={(e) => setValue(e.target.value)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
           placeholder={`Nome do ${label.toLowerCase()}...`}
-          className="w-full h-[120px] px-4 py-4 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/70 text-slate-800 text-[15px] focus:outline-none focus:border-blue-400 focus:bg-white font-medium placeholder:text-slate-300 placeholder:italic transition-colors"
+          className="w-full bg-transparent text-slate-800 text-[16px] font-semibold focus:outline-none placeholder:text-slate-300 placeholder:font-normal placeholder:text-[14px]"
         />
-        {!value && (
-          <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-25">
-            <span className="text-slate-400 font-medium italic text-sm">Digite o nome aqui</span>
+        {/* Signature line */}
+        <div className={`mt-2 h-px transition-all ${focused ? 'bg-blue-300' : value ? 'bg-slate-200' : 'bg-slate-100'
+          }`} />
+        {value && (
+          <div className="mt-1.5 flex items-center gap-1">
+            <div className="w-1 h-1 rounded-full bg-emerald-400" />
+            <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">Preenchido</span>
           </div>
+        )}
+        {!value && (
+          <p className="mt-1.5 text-[10px] text-slate-300 font-medium">Toque para digitar</p>
         )}
       </div>
     </div>
@@ -884,9 +912,17 @@ Faça login no sistema para ver os detalhes completos.`;
           </div>
         )}
 
-        <div className="bg-white rounded-xl shadow-[0_2px_12px_rgb(0,0,0,0.03)] border border-slate-200 p-8 mt-10">
-          <h2 className="text-sm font-extrabold text-slate-400 tracking-wider mb-10">ASSINATURAS</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-12">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 mt-10">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center">
+              <Users className="w-4 h-4 text-slate-500" />
+            </div>
+            <div>
+              <h2 className="text-sm font-extrabold text-slate-700 tracking-wider uppercase">Assinaturas</h2>
+              <p className="text-[11px] text-slate-400 font-medium">Digite o nome dos responsáveis abaixo</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <SignatureField label="Mecânico" />
             <SignatureField label="Eletricista" />
             <SignatureField label="Encarregado" />
