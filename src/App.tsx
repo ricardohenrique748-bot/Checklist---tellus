@@ -141,7 +141,7 @@ function ItemRow({
         <div className="flex-1 overflow-hidden">
           {/* Label */}
           <div className="font-bold text-slate-800 text-[14px] uppercase tracking-wide">
-            {label} {!isCalibration && <span className="text-red-500 font-normal ml-0.5">*</span>}
+            {label}
           </div>
 
           {isCalibration && onUpdatePressure && (
@@ -506,22 +506,39 @@ function ChecklistView() {
     });
   };
 
-  const totalItemsCount = mechanicallyItems.length + electricalItems.length + externalItems.length + lubricationItems.length + calibrationItems.length;
-  const totalCompleted =
+  // Contagens separadas por aba
+  const checklistItemsCount = mechanicallyItems.length + electricalItems.length + externalItems.length;
+  const checklistCompleted =
     Object.values(mecanica).filter((i: any) => i.status !== null).length +
     Object.values(eletrica).filter((i: any) => i.status !== null).length +
-    Object.values(externa).filter((i: any) => i.status !== null).length +
-    Object.values(lubrificacao).filter((i: any) => i.status !== null).length +
-    Object.values(calibragem).filter((i: any) => i.status !== null).length;
+    Object.values(externa).filter((i: any) => i.status !== null).length;
+
+  const lubrificacaoItemsCount = lubricationItems.length;
+  const lubrificacaoCompleted = Object.values(lubrificacao).filter((i: any) => i.status !== null).length;
+
+  const calibragemItemsCount = calibrationItems.length;
+  const calibragemCompleted = Object.values(calibragem).filter((i: any) => i.status !== null).length;
+
+  // Total geral para referência
+  const totalItemsCount = checklistItemsCount + lubrificacaoItemsCount + calibragemItemsCount;
+  const totalCompleted = checklistCompleted + lubrificacaoCompleted + calibragemCompleted;
 
   const handleSave = async () => {
-    const inspectionData = {
+    if (!headerPlaca) {
+      alert('Por favor, selecione uma placa/equipamento.');
+      return;
+    }
+    if (!headerResponsavel) {
+      alert('Por favor, selecione o responsável.');
+      return;
+    }
+
+    const inspectionData: any = {
       placa: headerPlaca,
-      empresa: headerEmpresa,
       responsavel: headerResponsavel,
       data: headerData,
       hora: headerHora,
-      km: headerKM,
+      km: headerKM || null,
       mecanica,
       eletrica,
       externa,
@@ -529,12 +546,25 @@ function ChecklistView() {
       calibragem
     };
 
+    // Tentar incluir empresa (coluna pode não existir ainda)
     try {
-      const { data, error } = await supabase.from('inspecoes').insert([inspectionData]).select();
-      if (error) throw error;
-
-      const newHistory = data ? [...data, ...history] : [];
-      setHistory(newHistory);
+      const fullData = { ...inspectionData, empresa: headerEmpresa || null };
+      const { data, error } = await supabase.from('inspecoes').insert([fullData]).select();
+      if (error) {
+        // Se erro for por coluna inexistente, tenta sem empresa
+        if (error.message?.includes('empresa') || error.code === 'PGRST204') {
+          console.warn('Coluna empresa não existe, salvando sem ela...');
+          const { data: data2, error: error2 } = await supabase.from('inspecoes').insert([inspectionData]).select();
+          if (error2) throw error2;
+          const newHistory = data2 ? [...data2, ...history] : [];
+          setHistory(newHistory);
+        } else {
+          throw error;
+        }
+      } else {
+        const newHistory = data ? [...data, ...history] : [];
+        setHistory(newHistory);
+      }
 
       // Clear forms
       setHeaderEmpresa('');
@@ -545,6 +575,7 @@ function ChecklistView() {
       alert('Inspeção salva com sucesso!');
       setViewMode('historico');
     } catch (e: any) {
+      console.error('Erro ao salvar inspeção:', e);
       alert(`Erro ao salvar inspeção: ${e.message}`);
     }
   };
@@ -669,7 +700,9 @@ Faça login no sistema para ver os detalhes completos.`;
               {viewMode === 'visualizar' ? 'Modo de leitura apenas.' : 'Realize o preenchimento das abas antes de salvar.'}
             </p>
             <span className="bg-blue-50 text-blue-600 text-[11px] font-black px-3 py-1 rounded-full border border-blue-100">
-              {totalCompleted} / {totalItemsCount} ITENS
+              {inspectionTab === 'checklist' && `${checklistCompleted} / ${checklistItemsCount} ITENS`}
+              {inspectionTab === 'lubrificacao' && `${lubrificacaoCompleted} / ${lubrificacaoItemsCount} ITENS`}
+              {inspectionTab === 'calibragem' && `${calibragemCompleted} / ${calibragemItemsCount} ITENS`}
             </span>
           </div>
         </div>
@@ -968,9 +1001,10 @@ Faça login no sistema para ver os detalhes completos.`;
               <button
                 type="button"
                 onClick={handleSave}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-extrabold px-8 py-3.5 rounded-xl shadow-md active:scale-[0.98] transition-all text-[15px] uppercase tracking-wide w-full sm:w-auto"
+                className="bg-blue-600 hover:bg-blue-700 text-white font-extrabold px-8 py-3.5 rounded-xl shadow-md active:scale-[0.98] transition-all text-[15px] uppercase tracking-wide w-full sm:w-auto flex items-center gap-2 justify-center"
               >
-                Salvar Checklist
+                <Save className="w-5 h-5" />
+                Salvar Inspeção
               </button>
             </div>
           )
@@ -993,26 +1027,43 @@ function DatabaseView() {
   const loadData = async () => {
     setLoadingDados(true);
     setLoadError('');
+    console.log("Tentando carregar dados do Supabase...");
+
     try {
-      const [rFrota, rFunc, rAc, rEmp] = await Promise.all([
-        supabase.from('frotas').select('*').limit(1000),
-        supabase.from('funcionarios').select('*').limit(1000),
-        supabase.from('acessos').select('*').limit(1000),
-        supabase.from('empresas').select('*').limit(1000)
+      // Carregamento individual para evitar falha total se uma tabela sumir
+      const loadTable = async (table: string, setter: (data: any[]) => void) => {
+        try {
+          const { data, error } = await supabase.from(table).select('*').limit(1000);
+          if (error) {
+            console.error(`Erro na tabela ${table}:`, error);
+            // Não interrompe o fluxo geral
+            return false;
+          }
+          if (data) setter(data);
+          return true;
+        } catch (e: any) {
+          console.error(`Falha de conexão na tabela ${table}:`, e);
+          return false;
+        }
+      };
+
+      const results = await Promise.all([
+        loadTable('frotas', setFrotas),
+        loadTable('funcionarios', setFuncionarios),
+        loadTable('acessos', setAcessos),
+        loadTable('empresas', setEmpresas)
       ]);
 
-      if (rFrota.error) throw rFrota.error;
-      if (rFunc.error) throw rFunc.error;
-      if (rAc.error) throw rAc.error;
-      if (rEmp.error) throw rEmp.error;
+      const anyFailed = results.includes(false);
+      if (anyFailed && results.every(r => r === false)) {
+        setLoadError("Falha total na conexão. Verifique se o projeto Supabase está ATIVO (não pausado).");
+      } else if (anyFailed) {
+        setLoadError("Alguns dados não puderam ser carregados. Verifique as tabelas no banco.");
+      }
 
-      setFrotas(rFrota.data || []);
-      setFuncionarios(rFunc.data || []);
-      setAcessos(rAc.data || []);
-      setEmpresas(rEmp.data || []);
     } catch (err: any) {
-      console.error("Erro no carregamento:", err);
-      setLoadError(err.message || "Erro ao conectar com o banco de dados");
+      console.error("Erro geral no carregamento:", err);
+      setLoadError("Erro de rede: Não foi possível alcançar o servidor.");
     } finally {
       setLoadingDados(false);
     }
