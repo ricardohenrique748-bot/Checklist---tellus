@@ -303,16 +303,16 @@ function ItemRow({
   )
 }
 
-function SignatureField({ label, icon }: { label: string; icon?: string }) {
+function SignatureField({ label }: { label: string }) {
   const [value, setValue] = useState('');
   const [focused, setFocused] = useState(false);
 
   return (
     <div className={`relative flex flex-col rounded-2xl border transition-all duration-200 overflow-hidden ${focused
-        ? 'border-blue-400 shadow-[0_0_0_3px_rgba(59,130,246,0.12)] bg-white'
-        : value
-          ? 'border-slate-200 bg-white shadow-sm'
-          : 'border-dashed border-slate-200 bg-slate-50/60'
+      ? 'border-blue-400 shadow-[0_0_0_3px_rgba(59,130,246,0.12)] bg-white'
+      : value
+        ? 'border-slate-200 bg-white shadow-sm'
+        : 'border-dashed border-slate-200 bg-slate-50/60'
       }`}>
       {/* Header */}
       <div className={`flex items-center justify-between px-4 pt-4 pb-2 border-b ${focused ? 'border-blue-100' : 'border-slate-100'
