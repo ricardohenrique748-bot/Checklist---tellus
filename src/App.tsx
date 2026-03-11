@@ -981,8 +981,8 @@ Faça login no sistema para ver os detalhes completos.`;
             </div>
           )
         }
-      </form >
-    </div >
+      </form>
+    </div>
   );
 }
 
@@ -997,21 +997,29 @@ function DatabaseView() {
 
   useEffect(() => {
     async function loadData() {
-      setLoadingDados(true);
+      try {
+        setLoadingDados(true);
 
-      const { data: df } = await supabase.from('frotas').select('*').order('created_at', { ascending: false });
-      if (df) setFrotas(df);
+        const [rFrota, rFunc, rAc, rEmp] = await Promise.all([
+          supabase.from('frotas').select('*').order('created_at', { ascending: false }),
+          supabase.from('funcionarios').select('*').order('created_at', { ascending: false }),
+          supabase.from('acessos').select('*').order('created_at', { ascending: false }),
+          supabase.from('empresas').select('*').order('nome', { ascending: true })
+        ]);
 
-      const { data: dfunc } = await supabase.from('funcionarios').select('*').order('created_at', { ascending: false });
-      if (dfunc) setFuncionarios(dfunc);
+        if (rFrota.data) setFrotas(rFrota.data);
+        if (rFunc.data) setFuncionarios(rFunc.data);
+        if (rAc.data) setAcessos(rAc.data);
+        if (rEmp.data) setEmpresas(rEmp.data);
 
-      const { data: dac } = await supabase.from('acessos').select('*').order('created_at', { ascending: false });
-      if (dac) setAcessos(dac);
-
-      const { data: demp } = await supabase.from('empresas').select('*').order('nome', { ascending: true });
-      if (demp) setEmpresas(demp);
-
-      setLoadingDados(false);
+        if (rFrota.error || rFunc.error || rAc.error || rEmp.error) {
+          console.error("Erro ao carregar dados:", { f: rFrota.error, fu: rFunc.error, a: rAc.error, e: rEmp.error });
+        }
+      } catch (err) {
+        console.error("Erro fatal no carregamento:", err);
+      } finally {
+        setLoadingDados(false);
+      }
     }
     loadData();
   }, []);
@@ -1602,7 +1610,7 @@ function DatabaseView() {
             </form>
           )
         }
-      </div >
+      </div>
 
       {/* Listagem de Cadastrados */}
       <div className="bg-white rounded-2xl shadow-[0_2px_12px_rgb(0,0,0,0.03)] border border-slate-200 overflow-hidden">
