@@ -1985,31 +1985,7 @@ function DashboardView({ isPublic = false }: { isPublic?: boolean }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div className="bg-white rounded-xl shadow-[0_2px_12px_rgb(0,0,0,0.03)] border border-slate-200 p-6 flex flex-col justify-center">
-          <div className="flex justify-between items-start mb-4">
-            <div className="text-slate-500 font-bold text-sm">INSPEÇÕES HOJE</div>
-            <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center">
-              <ListChecks className="w-4 h-4 text-blue-600" />
-            </div>
-          </div>
-          <div className="text-3xl font-extrabold text-slate-800">
-            {stats.inspections}
-          </div>
-        </div>
 
-        <div className="bg-white rounded-xl shadow-[0_2px_12px_rgb(0,0,0,0.03)] border border-slate-200 p-6 flex flex-col justify-center">
-          <div className="flex justify-between items-start mb-4">
-            <div className="text-slate-500 font-bold text-sm">NÃO CONFORMES</div>
-            <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center">
-              <XCircle className="w-4 h-4 text-red-600" />
-            </div>
-          </div>
-          <div className="text-3xl font-extrabold text-slate-800">
-            {stats.nonConformities}
-          </div>
-        </div>
-      </div>
 
       <div className="bg-white rounded-xl shadow-[0_2px_12px_rgb(0,0,0,0.03)] border border-slate-200 p-6 sm:p-8">
         <div className="flex items-center justify-between mb-8">
@@ -3015,12 +2991,22 @@ function PreventivaView() {
 
 function OSView() {
   const currentDate = new Date().toISOString().split('T')[0];
-  const [dataCriacao, setDataCriacao] = useState(currentDate);
+  const [tipoOS, setTipoOS] = useState('Corretiva');
+  const [dataAbertura, setDataAbertura] = useState(currentDate);
+  const [horaAbertura, setHoraAbertura] = useState(() => new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
   const [dataFechamento, setDataFechamento] = useState('');
-  const [status, setStatus] = useState('aberta');
+  const [horaFechamento, setHoraFechamento] = useState('');
+  const [prioridade, setPrioridade] = useState('Média');
+  const [mecanico, setMecanico] = useState('');
+  const [observacoes, setObservacoes] = useState('');
+  const [status, setStatus] = useState('Aberta');
   const [placa, setPlaca] = useState('');
   const [descricao, setDescricao] = useState('');
-  
+
+  // Fotos
+  const [fotosProblema, setFotosProblema] = useState<string[]>([]);
+  const [fotosResolvido, setFotosResolvido] = useState<string[]>([]);
+
   const [editingId, setEditingId] = useState<number | null>(null);
   const [osList, setOsList] = useState<any[]>([]);
   const [frotasDisponiveis, setFrotasDisponiveis] = useState<any[]>([]);
@@ -3037,39 +3023,66 @@ function OSView() {
   }, []);
 
   const clearForm = () => {
-    setDataCriacao(currentDate);
+    setTipoOS('Corretiva');
+    setDataAbertura(currentDate);
+    setHoraAbertura(new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
     setDataFechamento('');
-    setStatus('aberta');
+    setHoraFechamento('');
+    setPrioridade('Média');
+    setMecanico('');
+    setObservacoes('');
+    setStatus('Aberta');
     setPlaca('');
     setDescricao('');
+    setFotosProblema([]);
+    setFotosResolvido([]);
     setEditingId(null);
   };
 
   const handleSaveOS = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!placa || !descricao) {
-      alert('Preencha os campos obrigatórios (Placa e Descrição)!');
+      alert('Preencha os campos obrigatórios (Placa e Descrição do Problema)!');
       return;
     }
 
     try {
       const osData = {
-        data_criacao: dataCriacao,
-        data_fechamento: dataFechamento || null,
-        status,
         placa,
+        tipo_os: tipoOS,
+        status,
+        data_abertura: dataAbertura,
+        hora_abertura: horaAbertura,
+        data_fechamento: dataFechamento || null,
+        hora_fechamento: horaFechamento || null,
+        prioridade,
         descricao,
+        mecanico: mecanico || null,
+        observacoes: observacoes || null,
+        fotos_problema: fotosProblema.length > 0 ? JSON.stringify(fotosProblema) : null,
+        fotos_resolvido: fotosResolvido.length > 0 ? JSON.stringify(fotosResolvido) : null,
       };
 
       if (editingId) {
         const { data, error } = await supabase.from('ordens_servico').update(osData).eq('id', editingId).select();
         if (error) throw error;
-        if (data) setOsList(osList.map(o => o.id === editingId ? data[0] : o));
+        // Parsing the JSON back logic for the UI if needed
+        if (data) {
+          const updated = data[0];
+          if (typeof updated.fotos_problema === 'string') updated.fotos_problema = JSON.parse(updated.fotos_problema);
+          if (typeof updated.fotos_resolvido === 'string') updated.fotos_resolvido = JSON.parse(updated.fotos_resolvido);
+          setOsList(osList.map(o => o.id === editingId ? updated : o));
+        }
         alert('OS atualizada com sucesso!');
       } else {
         const { data, error } = await supabase.from('ordens_servico').insert([osData]).select();
         if (error) throw error;
-        if (data) setOsList([data[0], ...osList]);
+        if (data) {
+          const created = data[0];
+          if (typeof created.fotos_problema === 'string') created.fotos_problema = JSON.parse(created.fotos_problema);
+          if (typeof created.fotos_resolvido === 'string') created.fotos_resolvido = JSON.parse(created.fotos_resolvido);
+          setOsList([created, ...osList]);
+        }
         alert('OS criada com sucesso!');
       }
       clearForm();
@@ -3080,12 +3093,48 @@ function OSView() {
 
   const startEdit = (o: any) => {
     setEditingId(o.id);
-    setDataCriacao(o.data_criacao || currentDate);
-    setDataFechamento(o.data_fechamento || '');
-    setStatus(o.status || 'aberta');
     setPlaca(o.placa || '');
+    setTipoOS(o.tipo_os || 'Corretiva');
+    setStatus(o.status || 'Aberta');
+    setDataAbertura(o.data_abertura || currentDate);
+    setHoraAbertura(o.hora_abertura || '');
+    setDataFechamento(o.data_fechamento || '');
+    setHoraFechamento(o.hora_fechamento || '');
+    setPrioridade(o.prioridade || 'Média');
     setDescricao(o.descricao || '');
+    setMecanico(o.mecanico || '');
+    setObservacoes(o.observacoes || '');
+
+    setFotosProblema(Array.isArray(o.fotos_problema) ? o.fotos_problema : typeof o.fotos_problema === 'string' ? JSON.parse(o.fotos_problema) : []);
+    setFotosResolvido(Array.isArray(o.fotos_resolvido) ? o.fotos_resolvido : typeof o.fotos_resolvido === 'string' ? JSON.parse(o.fotos_resolvido) : []);
+
     window.scrollTo({ top: 0, behavior: 'auto' });
+  };
+
+  const handleAddProblemPhotos = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    Array.from(e.target.files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setFotosProblema(prev => [...prev, event.target!.result as string]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleAddResolvedPhotos = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    Array.from(e.target.files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setFotosResolvido(prev => [...prev, event.target!.result as string]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
   };
 
   const deleteOS = async (id: number) => {
@@ -3138,49 +3187,45 @@ function OSView() {
         )}
 
         <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-             <div>
-                <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
-                  Data de Criação <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={dataCriacao}
-                  onChange={(e) => setDataCriacao(e.target.value)}
-                  className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold shadow-sm"
-                  style={{ colorScheme: 'light' }}
-                />
-             </div>
-             <div>
-                <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
-                  Data de Fechamento
-                </label>
-                <input
-                  type="date"
-                  value={dataFechamento}
-                  onChange={(e) => setDataFechamento(e.target.value)}
-                  className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold shadow-sm"
-                  style={{ colorScheme: 'light' }}
-                />
-             </div>
+
+          {/* Placa */}
+          <div>
+            <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+              Placa <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <select
+                value={placa}
+                onChange={(e) => setPlaca(e.target.value)}
+                className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold appearance-none shadow-sm"
+              >
+                <option value="">Selecione a placa</option>
+                {frotasDisponiveis.map((f: any) => (
+                  <option key={f.placa} value={f.placa}>{f.placa} ({f.modelo})</option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                <ChevronDown className="w-4 h-4" />
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Tipo da OS */}
             <div>
               <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
-                Placa do Veículo <span className="text-red-500">*</span>
+                Tipo da OS
               </label>
               <div className="relative">
                 <select
-                  value={placa}
-                  onChange={(e) => setPlaca(e.target.value)}
-                  className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold appearance-none shadow-sm"
+                  value={tipoOS}
+                  onChange={(e) => setTipoOS(e.target.value)}
+                  className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold appearance-none shadow-sm"
                 >
-                  <option value="">Selecione a placa...</option>
-                  {frotasDisponiveis.map((f: any) => (
-                    <option key={f.placa} value={f.placa}>{f.placa} ({f.modelo})</option>
-                  ))}
+                  <option value="Corretiva">Corretiva</option>
+                  <option value="Preventiva">Preventiva</option>
+                  <option value="Melhoria">Melhoria</option>
+                  <option value="Preditiva">Preditiva</option>
                 </select>
                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
                   <ChevronDown className="w-4 h-4" />
@@ -3188,6 +3233,7 @@ function OSView() {
               </div>
             </div>
 
+            {/* Status */}
             <div>
               <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
                 Status <span className="text-red-500">*</span>
@@ -3196,11 +3242,12 @@ function OSView() {
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
-                  className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold appearance-none shadow-sm"
+                  className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold appearance-none shadow-sm"
                 >
-                  <option value="aberta">Aberta</option>
-                  <option value="em andamento">Em Andamento</option>
-                  <option value="fechada">Fechada</option>
+                  <option value="Aberta">Aberta</option>
+                  <option value="Em Andamento">Em Andamento</option>
+                  <option value="Aguardando Peças">Aguardando Peças</option>
+                  <option value="Fechada">Fechada</option>
                 </select>
                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
                   <ChevronDown className="w-4 h-4" />
@@ -3209,22 +3256,226 @@ function OSView() {
             </div>
           </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Data e Hora Abertura */}
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                  Data Abertura <span className="text-red-500">*</span>
+                </label>
+                <div className="relative flex items-center">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Calendar className="w-4 h-4 text-slate-400" />
+                  </div>
+                  <input
+                    type="date"
+                    required
+                    value={dataAbertura}
+                    onChange={(e) => setDataAbertura(e.target.value)}
+                    className="w-full h-12 pl-10 pr-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold shadow-sm"
+                    style={{ colorScheme: 'light' }}
+                  />
+                </div>
+              </div>
+              <div className="flex-1">
+                <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                  Hora Abertura
+                </label>
+                <div className="relative flex items-center">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Clock className="w-4 h-4 text-slate-400" />
+                  </div>
+                  <input
+                    type="time"
+                    value={horaAbertura}
+                    onChange={(e) => setHoraAbertura(e.target.value)}
+                    className="w-full h-12 pl-10 pr-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold shadow-sm"
+                    style={{ colorScheme: 'light' }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Data e Hora Fechamento */}
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                  Data Fechamento
+                </label>
+                <div className="relative flex items-center">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Calendar className="w-4 h-4 text-slate-400" />
+                  </div>
+                  <input
+                    type="date"
+                    value={dataFechamento}
+                    onChange={(e) => setDataFechamento(e.target.value)}
+                    className="w-full h-12 pl-10 pr-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold shadow-sm"
+                    style={{ colorScheme: 'light' }}
+                  />
+                </div>
+              </div>
+              <div className="flex-1">
+                <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                  Hora Fechamento
+                </label>
+                <div className="relative flex items-center">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Clock className="w-4 h-4 text-slate-400" />
+                  </div>
+                  <input
+                    type="time"
+                    value={horaFechamento}
+                    onChange={(e) => setHoraFechamento(e.target.value)}
+                    className="w-full h-12 pl-10 pr-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold shadow-sm"
+                    style={{ colorScheme: 'light' }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Prioridade */}
+            <div>
+              <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+                Prioridade
+              </label>
+              <div className="relative">
+                <select
+                  value={prioridade}
+                  onChange={(e) => setPrioridade(e.target.value)}
+                  className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold appearance-none shadow-sm"
+                >
+                  <option value="Baixa">Baixa</option>
+                  <option value="Média">Média</option>
+                  <option value="Alta">Alta</option>
+                  <option value="Urgente">Urgente</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                  <ChevronDown className="w-4 h-4" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Descrição do Problema */}
           <div>
             <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
-              Descrição do Serviço <span className="text-red-500">*</span>
+              Descrição do Problema <span className="text-red-500">*</span>
             </label>
             <textarea
               required
               rows={4}
               value={descricao}
               onChange={(e) => setDescricao(e.target.value)}
-              placeholder="Descreva os serviços a serem realizados ou problemas relatados..."
-              className="w-full p-4 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm resize-none"
+              placeholder="Descreva o problema..."
+              className="w-full p-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm resize-none"
             />
           </div>
-          
+
+          {/* Mecânico */}
+          <div>
+            <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+              Mecânico
+            </label>
+            <input
+              type="text"
+              value={mecanico}
+              onChange={(e) => setMecanico(e.target.value)}
+              placeholder="Nome do mecânico"
+              className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold shadow-sm"
+            />
+          </div>
+
+          {/* Observações */}
+          <div>
+            <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-2.5">
+              Observações
+            </label>
+            <textarea
+              rows={3}
+              value={observacoes}
+              onChange={(e) => setObservacoes(e.target.value)}
+              placeholder="Observações..."
+              className="w-full p-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm resize-none"
+            />
+          </div>
+
+          {/* Fotos do Problema */}
+          <div>
+            <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-3">
+              Fotos do Problema
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <label className="aspect-video rounded-xl border-2 border-dashed border-slate-300 hover:border-blue-500 hover:bg-blue-50/50 cursor-pointer flex flex-col items-center justify-center gap-2 transition-all">
+                <Camera className="w-6 h-6 text-slate-400" />
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Câmera</span>
+                <input type="file" accept="image/*" capture="environment" className="hidden" multiple onChange={handleAddProblemPhotos} />
+              </label>
+              <label className="aspect-video rounded-xl border-2 border-dashed border-slate-300 hover:border-blue-500 hover:bg-blue-50/50 cursor-pointer flex flex-col items-center justify-center gap-2 transition-all">
+                <ImagePlus className="w-6 h-6 text-slate-400" />
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Galeria</span>
+                <input type="file" accept="image/*" className="hidden" multiple onChange={handleAddProblemPhotos} />
+              </label>
+            </div>
+
+            {fotosProblema.length > 0 && (
+              <div className="flex gap-3 overflow-x-auto mt-4 pb-2">
+                {fotosProblema.map((photo, i) => (
+                  <div key={i} className="relative w-24 h-24 shrink-0 rounded-xl overflow-hidden group">
+                    <img src={photo} alt="" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setFotosProblema(prev => prev.filter((_, index) => index !== i))}
+                      className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white p-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Fotos do Problema Resolvido */}
+          <div>
+            <label className="flex items-center gap-1.5 text-xs font-extrabold text-[#7b8193] uppercase tracking-wide mb-3">
+              Fotos do Problema Resolvido
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <label className="aspect-video rounded-xl border-2 border-dashed border-slate-300 hover:border-blue-500 hover:bg-blue-50/50 cursor-pointer flex flex-col items-center justify-center gap-2 transition-all">
+                <Camera className="w-6 h-6 text-slate-400" />
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Câmera</span>
+                <input type="file" accept="image/*" capture="environment" className="hidden" multiple onChange={handleAddResolvedPhotos} />
+              </label>
+              <label className="aspect-video rounded-xl border-2 border-dashed border-slate-300 hover:border-blue-500 hover:bg-blue-50/50 cursor-pointer flex flex-col items-center justify-center gap-2 transition-all">
+                <ImagePlus className="w-6 h-6 text-slate-400" />
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Galeria</span>
+                <input type="file" accept="image/*" className="hidden" multiple onChange={handleAddResolvedPhotos} />
+              </label>
+            </div>
+
+            {fotosResolvido.length > 0 && (
+              <div className="flex gap-3 overflow-x-auto mt-4 pb-2">
+                {fotosResolvido.map((photo, i) => (
+                  <div key={i} className="relative w-24 h-24 shrink-0 rounded-xl overflow-hidden group">
+                    <img src={photo} alt="" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setFotosResolvido(prev => prev.filter((_, index) => index !== i))}
+                      className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white p-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div className="h-px bg-slate-100 my-4"></div>
-          
+
           <div className="flex justify-end gap-3 pt-2">
             <button
               type="button"
@@ -3254,29 +3505,52 @@ function OSView() {
             <div className="p-10 text-center text-slate-500 font-medium tracking-wide text-sm">Nenhuma OS cadastrada.</div>
           )}
           {osList.map(o => {
-            let statusColor = 'text-slate-500 bg-slate-100';
-            if (o.status === 'aberta') statusColor = 'text-red-600 bg-red-50';
-            if (o.status === 'em andamento') statusColor = 'text-amber-600 bg-amber-50';
-            if (o.status === 'fechada') statusColor = 'text-emerald-600 bg-emerald-50';
+            let statusColor = 'text-slate-500 bg-slate-100 border-slate-200';
+            if (o.status === 'Aberta') statusColor = 'text-blue-600 bg-blue-50 border-blue-200';
+            if (o.status === 'Em Andamento') statusColor = 'text-amber-600 bg-amber-50 border-amber-200';
+            if (o.status === 'Aguardando Peças') statusColor = 'text-orange-600 bg-orange-50 border-orange-200';
+            if (o.status === 'Fechada') statusColor = 'text-emerald-600 bg-emerald-50 border-emerald-200';
 
             return (
               <div key={o.id} className="p-5 sm:px-8 flex items-center justify-between hover:bg-slate-50 transition-colors">
                 <div className="flex-1">
                   <div className="flex items-center gap-3">
                     <span className="font-extrabold text-slate-800 text-lg">OS#{o.id}</span>
-                    <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${statusColor}`}>
+                    <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-md border ${statusColor}`}>
                       {o.status}
                     </span>
+                    {o.tipo_os && (
+                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-500">
+                        {o.tipo_os}
+                      </span>
+                    )}
                   </div>
-                  <div className="text-[13px] font-bold text-slate-600 mt-1 uppercase">Placa: {o.placa}</div>
-                  <div className="text-[12px] text-slate-500 mt-1 line-clamp-1">{o.descricao}</div>
-                  <div className="flex gap-4 mt-2">
-                    <div className="text-[11px] font-bold text-slate-400 uppercase">
-                      Criada em: <span className="text-slate-600">{o.data_criacao ? new Date(o.data_criacao + 'T00:00:00').toLocaleDateString('pt-BR') : '-'}</span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="text-[13px] font-bold text-slate-700 uppercase">{o.placa}</div>
+                    {o.prioridade && (
+                      <div className="flex items-center gap-1 text-[11px] font-bold text-slate-500">
+                        &bull; Prioridade <span className={o.prioridade === 'Alta' || o.prioridade === 'Urgente' ? 'text-red-500' : 'text-slate-500'}>{o.prioridade}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="text-[13px] text-slate-600 mt-2 line-clamp-2">{o.descricao}</div>
+
+                  <div className="flex flex-wrap gap-4 mt-3">
+                    <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400">
+                      <Calendar className="w-3.5 h-3.5" />
+                      Abertura: <span className="text-slate-600">{new Date(o.data_abertura + 'T00:00:00').toLocaleDateString('pt-BR')} {o.hora_abertura}</span>
                     </div>
                     {o.data_fechamento && (
-                      <div className="text-[11px] font-bold text-slate-400 uppercase">
-                        Fechamento: <span className="text-slate-600">{new Date(o.data_fechamento + 'T00:00:00').toLocaleDateString('pt-BR')}</span>
+                      <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400">
+                        <Calendar className="w-3.5 h-3.5" />
+                        Fechamento: <span className="text-slate-600">{new Date(o.data_fechamento + 'T00:00:00').toLocaleDateString('pt-BR')} {o.hora_fechamento}</span>
+                      </div>
+                    )}
+                    {o.mecanico && (
+                      <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400">
+                        <Wrench className="w-3.5 h-3.5" />
+                        Mecânico: <span className="text-slate-600 uppercase">{o.mecanico}</span>
                       </div>
                     )}
                   </div>
