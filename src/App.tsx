@@ -303,8 +303,7 @@ function ItemRow({
   )
 }
 
-function SignatureField({ label }: { label: string }) {
-  const [value, setValue] = useState('');
+function SignatureField({ label, value, setValue }: { label: string, value: string, setValue: (v: string) => void }) {
   const [focused, setFocused] = useState(false);
 
   return (
@@ -415,6 +414,11 @@ function ChecklistView() {
   const [headerData, setHeaderData] = useState(() => new Date().toISOString().split('T')[0]);
   const [headerHora, setHeaderHora] = useState(() => new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
   const [headerKM, setHeaderKM] = useState('');
+
+  const [mecanicoSig, setMecanicoSig] = useState('');
+  const [eletricistaSig, setEletricistaSig] = useState('');
+  const [encarregadoSig, setEncarregadoSig] = useState('');
+  const [elaboradoSig, setElaboradoSig] = useState('');
 
   const [mecanica, setMecanica] = useState<SectionState>({});
   const [eletrica, setEletrica] = useState<SectionState>({});
@@ -539,27 +543,66 @@ function ChecklistView() {
       eletrica,
       externa,
       lubrificacao,
-      calibragem
+      calibragem,
+      assinaturas: {
+        mecanico: mecanicoSig,
+        eletricista: eletricistaSig,
+        encarregado: encarregadoSig,
+        elaborado: elaboradoSig
+      }
     };
 
-    // Tentar incluir empresa (coluna pode não existir ainda)
     try {
       const fullData = { ...inspectionData, empresa: headerEmpresa || null };
-      const { data, error } = await supabase.from('inspecoes').insert([fullData]).select();
-      if (error) {
-        // Se erro for por coluna inexistente, tenta sem empresa
-        if (error.message?.includes('empresa') || error.code === 'PGRST204') {
-          console.warn('Coluna empresa não existe, salvando sem ela...');
-          const { data: data2, error: error2 } = await supabase.from('inspecoes').insert([inspectionData]).select();
-          if (error2) throw error2;
-          const newHistory = data2 ? [...data2, ...history] : [];
-          setHistory(newHistory);
+
+      let resultData: any[] | null = null;
+      if (editingInspecaoId) {
+        // Modo Edição
+        const { data, error } = await supabase
+          .from('inspecoes')
+          .update(fullData)
+          .eq('id', editingInspecaoId)
+          .select();
+
+        if (error) {
+          if (error.message?.includes('empresa') || error.code === 'PGRST204') {
+            const { data: d2, error: e2 } = await supabase
+              .from('inspecoes')
+              .update(inspectionData)
+              .eq('id', editingInspecaoId)
+              .select();
+            if (e2) throw e2;
+            resultData = d2 as any[];
+          } else {
+            throw error;
+          }
         } else {
-          throw error;
+          resultData = data as any[];
+        }
+
+        if (resultData && resultData.length > 0) {
+          const updated = resultData[0];
+          setHistory((prev: any[]) => prev.map((item: any) => item.id === editingInspecaoId ? updated : item));
         }
       } else {
-        const newHistory = data ? [...data, ...history] : [];
-        setHistory(newHistory);
+        // Modo Novo
+        const { data, error } = await supabase.from('inspecoes').insert([fullData]).select();
+        if (error) {
+          if (error.message?.includes('empresa') || error.code === 'PGRST204') {
+            const { data: d2, error: e2 } = await supabase.from('inspecoes').insert([inspectionData]).select();
+            if (e2) throw e2;
+            resultData = d2 as any[];
+          } else {
+            throw error;
+          }
+        } else {
+          resultData = data as any[];
+        }
+
+        if (resultData && resultData.length > 0) {
+          const inserted = resultData[0];
+          setHistory((prev: any[]) => [inserted, ...prev]);
+        }
       }
 
       // Clear forms
@@ -567,8 +610,10 @@ function ChecklistView() {
       setHeaderPlaca('');
       setHeaderKM('');
       setMecanica({}); setEletrica({}); setExterna({}); setLubrificacao({}); setCalibragem({});
+      setMecanicoSig(''); setEletricistaSig(''); setEncarregadoSig(''); setElaboradoSig('');
+      setEditingInspecaoId(null);
 
-      alert('Inspeção salva com sucesso!');
+      alert(editingInspecaoId ? 'Inspeção atualizada com sucesso!' : 'Inspeção salva com sucesso!');
       setViewMode('historico');
     } catch (e: any) {
       console.error('Erro ao salvar inspeção:', e);
@@ -594,12 +639,52 @@ Faça login no sistema para ver os detalhes completos.`;
     }
   };
 
+  const handleDeleteInspecao = async (id: number) => {
+    if (!confirm('Tem certeza que deseja EXCLUIR esta inspeção? Esta ação não pode ser desfeita.')) return;
+    try {
+      const { error } = await supabase.from('inspecoes').delete().eq('id', id);
+      if (error) throw error;
+      setHistory((prev: any[]) => prev.filter((h: any) => h.id !== id));
+      alert('Inspeção excluída com sucesso!');
+    } catch (e: any) {
+      console.error('Erro ao excluir:', e);
+      alert(`Erro ao excluir: ${e.message}`);
+    }
+  };
+
+  const [editingInspecaoId, setEditingInspecaoId] = useState<number | null>(null);
+
+  const handleEditInspecao = (inspeccao: any) => {
+    setEditingInspecaoId(inspeccao.id);
+    setHeaderPlaca(inspeccao.placa || '');
+    setHeaderResponsavel(inspeccao.responsavel || '');
+    setHeaderData(inspeccao.data || '');
+    setHeaderHora(inspeccao.hora || '');
+    setHeaderEmpresa(inspeccao.empresa || '');
+    setHeaderKM(inspeccao.km || '');
+    setMecanica(inspeccao.mecanica || {});
+    setEletrica(inspeccao.eletrica || {});
+    setExterna(inspeccao.externa || {});
+    setLubrificacao(inspeccao.lubrificacao || {});
+    setCalibragem(inspeccao.calibragem || {});
+
+    // Fill signatures
+    const ass = inspeccao.assinaturas || {};
+    setMecanicoSig(ass.mecanico || '');
+    setEletricistaSig(ass.eletricista || '');
+    setEncarregadoSig(ass.encarregado || '');
+    setElaboradoSig(ass.elaborado || '');
+
+    setViewMode('nova');
+  };
+
   const openVisualizacao = (inspeccao: any) => {
     setSelectedInspection(inspeccao);
     setViewMode('visualizar');
 
     // Fill states para o modo de visualização 
-    // É apenas para exibir... Mas podemos só usar o rendered do Checklist normal "desativado"
+    setHeaderPlaca(inspeccao.placa || '');
+    setHeaderResponsavel(inspeccao.responsavel || '');
     setHeaderData(inspeccao.data);
     setHeaderHora(inspeccao.hora);
     setHeaderEmpresa(inspeccao.empresa || '');
@@ -609,16 +694,28 @@ Faça login no sistema para ver os detalhes completos.`;
     setExterna(inspeccao.externa || {});
     setLubrificacao(inspeccao.lubrificacao || {});
     setCalibragem(inspeccao.calibragem || {});
+
+    // Fill signatures
+    const ass = inspeccao.assinaturas || {};
+    setMecanicoSig(ass.mecanico || '');
+    setEletricistaSig(ass.eletricista || '');
+    setEncarregadoSig(ass.encarregado || '');
+    setElaboradoSig(ass.elaborado || '');
   }
 
   const cancelVisualizacao = () => {
     setSelectedInspection(null);
+    setEditingInspecaoId(null);
     setViewMode('historico');
     // Clear states 
+    setHeaderPlaca('');
+    setHeaderResponsavel(localStorage.getItem('tellus_user_name') || '');
+    setHeaderData(new Date().toISOString().split('T')[0]);
     setHeaderHora(new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
     setHeaderEmpresa('');
     setHeaderKM('');
     setMecanica({}); setEletrica({}); setExterna({}); setLubrificacao({}); setCalibragem({});
+    setMecanicoSig(''); setEletricistaSig(''); setEncarregadoSig(''); setElaboradoSig('');
   }
 
   if (viewMode === 'historico') {
@@ -627,7 +724,10 @@ Faça login no sistema para ver os detalhes completos.`;
         <header className="mb-6 pt-2 flex items-center justify-between">
           <h1 className="text-[28px] font-extrabold tracking-tight text-slate-800">Histórico de Inspeções</h1>
           <button
-            onClick={() => setViewMode('nova')}
+            onClick={() => {
+              cancelVisualizacao();
+              setViewMode('nova');
+            }}
             className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-lg text-sm transition-colors"
           >
             + Nova Inspeção
@@ -659,18 +759,34 @@ Faça login no sistema para ver os detalhes completos.`;
                     </div>
                   </div>
                 </div>
-                <div className="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                <div className="flex flex-wrap gap-2 w-full sm:w-auto mt-2 sm:mt-0">
                   <button
                     onClick={() => openVisualizacao(item)}
                     className="flex-1 sm:flex-none justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg font-bold text-sm transition-colors flex items-center gap-2"
                   >
+                    <ClipboardList className="w-4 h-4" />
                     Ver / Imprimir
                   </button>
                   <button
                     onClick={() => handleShare(item)}
                     className="flex-1 sm:flex-none justify-center bg-emerald-100 hover:bg-emerald-200 text-emerald-700 px-4 py-2 rounded-lg font-bold text-sm transition-colors flex items-center gap-2"
                   >
+                    <Share2 className="w-4 h-4" />
                     Compartilhar
+                  </button>
+                  <button
+                    onClick={() => handleEditInspecao(item)}
+                    className="flex-none justify-center bg-amber-50 hover:bg-amber-100 text-amber-600 p-2 rounded-lg font-bold text-sm transition-colors flex items-center gap-1"
+                    title="Editar inspeção"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteInspecao(item.id)}
+                    className="flex-none justify-center bg-red-50 hover:bg-red-100 text-red-500 p-2 rounded-lg font-bold text-sm transition-colors flex items-center gap-1"
+                    title="Excluir inspeção"
+                  >
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -984,10 +1100,10 @@ Faça login no sistema para ver os detalhes completos.`;
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <SignatureField label="Mecânico" />
-            <SignatureField label="Eletricista" />
-            <SignatureField label="Encarregado" />
-            <SignatureField label="Elaborado por" />
+            <SignatureField label="Mecânico" value={mecanicoSig} setValue={setMecanicoSig} />
+            <SignatureField label="Eletricista" value={eletricistaSig} setValue={setEletricistaSig} />
+            <SignatureField label="Encarregado" value={encarregadoSig} setValue={setEncarregadoSig} />
+            <SignatureField label="Elaborado por" value={elaboradoSig} setValue={setElaboradoSig} />
           </div>
         </div>
 
@@ -1827,7 +1943,7 @@ function DashboardView({ isPublic = false }: { isPublic?: boolean }) {
         if (filterEndDate) prevQuery = prevQuery.lte('data', filterEndDate);
 
         if (!filterPlaca && filterEmpresa && frotasData) {
-          const placasDaEmpresa = frotasData.map((f: any) => f.placa);
+          const placasDaEmpresa = (frotasData as any[]).map((f: any) => f.placa);
           if (placasDaEmpresa.length > 0) {
             prevQuery = prevQuery.in('veiculo', placasDaEmpresa);
           } else {
